@@ -14,8 +14,17 @@ class DatasetVisualizer {
         this.chartElement = document.getElementById('dataChart');
         this.monthFilter = document.getElementById('month-filter');
         
+        // Debug
+        console.log('Elemento chart:', this.chartElement);
+        console.log('Elemento select mesi:', this.monthFilter);
+        
         // Event listeners
-        this.monthFilter.addEventListener('change', this.handleMonthFilter.bind(this));
+        if (this.monthFilter) {
+            this.monthFilter.addEventListener('change', this.handleMonthFilter.bind(this));
+            console.log('Event listener aggiunto al filtro mesi');
+        } else {
+            console.error('Elemento select per i mesi non trovato!');
+        }
         
         // Inizializzazione
         this.loadData();
@@ -128,7 +137,12 @@ class DatasetVisualizer {
     
     // Aggiorna il filtro dei mesi per mostrare solo i mesi disponibili nei dati
     updateMonthsFilter() {
-        if (!this.monthFilter) return;
+        if (!this.monthFilter) {
+            console.error('Elemento select per i mesi non trovato!');
+            return;
+        }
+        
+        console.log('Aggiornamento filtro mesi...');
         
         // Raccogli tutti i mesi unici presenti nel dataset
         const availableMonths = new Set();
@@ -137,6 +151,8 @@ class DatasetVisualizer {
             const year = item.date.getFullYear();
             availableMonths.add(`${year}-${monthIndex}`);
         });
+        
+        console.log('Mesi disponibili:', availableMonths);
         
         // Cancella le opzioni precedenti, tranne "Tutti i mesi"
         while (this.monthFilter.options.length > 1) {
@@ -149,14 +165,20 @@ class DatasetVisualizer {
         
         // Converti in array e ordina
         const sortedMonths = Array.from(availableMonths).sort();
+        console.log('Mesi ordinati:', sortedMonths);
         
+        // Aggiungi le nuove opzioni
         sortedMonths.forEach(yearMonth => {
             const [year, month] = yearMonth.split('-').map(Number);
             const option = document.createElement('option');
-            option.value = `${year}-${month}`;
+            option.value = yearMonth;  // Usa il formato "YYYY-MM"
             option.textContent = `${monthNames[month]} ${year}`;
             this.monthFilter.appendChild(option);
+            console.log(`Aggiunto mese: ${monthNames[month]} ${year}, valore: ${yearMonth}`);
         });
+        
+        // Verifica che ci siano opzioni
+        console.log('Opzioni dopo aggiornamento:', this.monthFilter.options.length);
     }
     
     // Stima i valori mancanti, escludendo i weekend
