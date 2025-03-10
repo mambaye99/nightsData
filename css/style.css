@@ -14,7 +14,7 @@ body {
     min-height: 100vh;
 }
 
-/* Pattern di facce come sfondo */
+/* Pattern di facce come sfondo - opacità aumentata */
 .background-container {
     position: fixed;
     top: 0;
@@ -26,7 +26,7 @@ body {
     background-image: url('/nightsData/img/face-pattern.png');
     background-size: 200px; /* Dimensione ottimizzata per il pattern grande */
     background-repeat: repeat;
-    opacity: 0.12; /* Leggermente ridotta per bilanciare la dimensione grande dell'immagine */
+    opacity: 0.25; /* Aumentata da 0.12 per rendere più visibili i pattern */
 }
 
 /* Rimuovi l'overlay scuro */
@@ -34,10 +34,10 @@ body {
     display: none;
 }
 
-/* Stile dell'header con immagine e citazione */
+/* Stile dell'header con il nuovo colore rgb(26, 163, 255) */
 header {
     padding: 2rem;
-    background-color: rgb(141, 136, 136);
+    background-color: rgb(26, 163, 255);
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
     margin-bottom: 2rem;
 }
@@ -112,10 +112,10 @@ h2 {
     padding-bottom: 0.5rem;
 }
 
-/* Stili per la sezione grafico - con sfondo grigio chiaro */
+/* Stili per la sezione grafico - mantenuto il colore originale come richiesto */
 .chart-section {
     position: relative;
-    background-color: #f8f9fa; /* Grigio molto chiaro per contrasto con lo sfondo bianco */
+    background-color: #f8f9fa; /* Mantenuto grigio molto chiaro come richiesto */
     border: 1px solid #e5e5e5;
     border-radius: 8px;
     overflow: hidden; /* Assicura che il contenuto non fuoriesca dai bordi arrotondati */
@@ -127,7 +127,7 @@ h2 {
     align-items: center;
     gap: 1rem;
     padding: 1rem;
-    background-color: #f0f0f0; /* Leggermente più scuro del contenitore principale */
+    background-color: #f0f0f0; /* Mantenuto come originale */
     border-bottom: 1px solid #e0e0e0;
 }
 
@@ -322,4 +322,3 @@ footer {
         align-items: flex-start;
     }
 }
-
