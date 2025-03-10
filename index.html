@@ -98,13 +98,23 @@
         
         /* Fix per problemi comuni su mobile */
         * {
-            -webkit-tap-highlight-color: transparent;
+            -webkit-tap-highlight-color: rgba(0,0,0,0.1);
         }
         
-        input, select, textarea, button {
+        input, textarea, button {
             -webkit-appearance: none;
+            appearance: none;
             border-radius: 0;
             font-size: 16px; /* Evita zoom su input in iOS */
+        }
+        
+        /* Assicurati che il select mantenga la sua apparenza nativa */
+        select {
+            font-size: 16px; /* Evita zoom su input in iOS */
+            border-radius: 4px;
+            background-color: white;
+            -webkit-appearance: menulist;
+            appearance: menulist;
         }
         
         /* Aggiungi animazione di caricamento */
@@ -213,6 +223,27 @@
                         // Il grafico è pronto, nascondi il loader e mostra il canvas
                         chartLoading.style.display = 'none';
                         chartCanvas.style.display = 'block';
+                        
+                        // Assicurati che il filtro per mesi funzioni correttamente
+                        // Verifica che gli event listener siano attivi
+                        if (window.datasetVisualizer && window.datasetVisualizer.monthFilter) {
+                            console.log('Ripristino funzionalità filtro mesi');
+                            const monthFilter = window.datasetVisualizer.monthFilter;
+                            
+                            // Rimuovi tutti gli event listener esistenti
+                            const newMonthFilter = monthFilter.cloneNode(true);
+                            monthFilter.parentNode.replaceChild(newMonthFilter, monthFilter);
+                            
+                            // Aggiorna il riferimento
+                            window.datasetVisualizer.monthFilter = newMonthFilter;
+                            
+                            // Aggiungi nuovamente l'event listener
+                            newMonthFilter.addEventListener('change', function(event) {
+                                console.log('Cambio mese da HTML aggiornato:', event.target.value);
+                                window.datasetVisualizer.handleMonthFilter(event);
+                            });
+                        }
+                        
                         observer.disconnect();
                     }
                 });
@@ -256,13 +287,14 @@
             if (isMobile) {
                 console.log('Dispositivo mobile rilevato, applicazione ottimizzazioni...');
                 
-                // Migliora interazione touch su select
+                // Rimuovi eventuali listener di eventi che potrebbero interferire
+                // con la normale funzionalità del select (NO preventDefault sul touchstart)
                 const selects = document.querySelectorAll('select');
                 selects.forEach(select => {
-                    select.addEventListener('touchstart', function(e) {
-                        // Previeni il doppio tap su iOS
-                        e.preventDefault();
-                        this.focus();
+                    // Assicurati che l'evento change funzioni correttamente
+                    select.addEventListener('change', function(e) {
+                        console.log('Select cambiato:', this.value);
+                        // Non fare nulla qui, lascia che l'event handler originale gestisca il cambio
                     });
                 });
                 
@@ -297,5 +329,41 @@
     <!-- Script applicazione -->
     <script src="js/chart.js"></script>
     <script src="js/quotes.js"></script>
+    
+    <!-- Script per il debug e ripristino funzionalità filtro mesi -->
+    <script>
+        // Controlla se il filtro mesi funziona correttamente dopo il caricamento completo
+        window.addEventListener('load', function() {
+            // Attendi che tutto sia caricato, incluso il grafico
+            setTimeout(function() {
+                if (window.datasetVisualizer) {
+                    console.log('Verifica funzionalità filtro mesi...');
+                    
+                    const monthFilter = document.getElementById('month-filter');
+                    if (monthFilter) {
+                        console.log('Opzioni disponibili:', monthFilter.options.length);
+                        
+                        // Assicurati che ci sia l'event listener
+                        monthFilter.addEventListener('change', function(event) {
+                            console.log('Cambio mese selezionato:', event.target.value);
+                            
+                            if (window.datasetVisualizer.handleMonthFilter) {
+                                window.datasetVisualizer.handleMonthFilter(event);
+                            } else {
+                                console.error('Handler per il filtro mesi non trovato!');
+                            }
+                        });
+                        
+                        // Forza l'aggiornamento del grafico
+                        if (window.datasetVisualizer.updateMonthsFilter) {
+                            window.datasetVisualizer.updateMonthsFilter();
+                        }
+                    } else {
+                        console.error('Select per filtro mesi non trovato!');
+                    }
+                }
+            }, 1000); // Attendiamo 1 secondo per assicurarci che tutto sia caricato
+        });
+    </script>
 </body>
 </html>
