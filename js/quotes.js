@@ -6,18 +6,6 @@ class QuotesManager {
             {
                 text: "Ci sono due tipi di uomini: quelli che parlano di donne e quelli che parlano con le donne; io di donne preferisco non parlare",
                 author: "The Attorney Nights"
-            },
-            {
-                text: "La misura dell'intelligenza è data dalla capacità di cambiare quando è necessario.",
-                author: "Albert Einstein"
-            },
-            {
-                text: "L'immaginazione è più importante della conoscenza.",
-                author: "Albert Einstein"
-            },
-            {
-                text: "La logica ti porta da A a B. L'immaginazione ti porta dappertutto.",
-                author: "Albert Einstein"
             }
         ];
         
