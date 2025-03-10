@@ -149,6 +149,15 @@ h2 {
     background-color: #dc3545;
 }
 
+.line.mean {
+    display: inline-block;
+    width: 24px;
+    height: 2px;
+    background-color: rgba(255, 193, 7, 0.8);
+    position: relative;
+    top: -4px;
+}
+
 .area.std-dev {
     display: inline-block;
     width: 24px;

@@ -175,29 +175,52 @@ class DatasetVisualizer {
         const stdDev = this.calculateStdDev(filteredData);
         
         // Prepara i dataset per Chart.js
-        const originalPoints = [];
-        const estimatedPoints = [];
-        const allPoints = [];
+        const combinedPoints = [];  // Un'unica serie per tutti i punti
+        const originalPointSizes = []; // Dimensioni dei punti per marcare originali vs stimati
+        const allValues = []; // Tutti i valori per calcolo statistico
         const labels = [];
         
         filteredData.forEach(item => {
             const formattedDate = this.formatDate(item.date);
             labels.push(formattedDate);
-            allPoints.push(item.time);
             
+            // Tutti i punti uniti in un'unica serie
+            combinedPoints.push(item.time);
+            allValues.push(item.time);
+            
+            // Usiamo dimensioni diverse per i punti per distinguere originali vs stimati
             if (item.isOriginal) {
-                originalPoints.push(item.time);
-                estimatedPoints.push(null);
+                originalPointSizes.push(5); // Punto più grande per dati originali
             } else {
-                originalPoints.push(null);
-                estimatedPoints.push(item.time);
+                originalPointSizes.push(3); // Punto più piccolo per dati stimati
             }
         });
         
-        // Calcola i limiti per la banda della deviazione standard
-        const mean = allPoints.reduce((sum, val) => sum + (val || 0), 0) / allPoints.filter(v => v !== null).length;
-        const upperBound = allPoints.map(() => mean + stdDev);
-        const lowerBound = allPoints.map(() => mean - stdDev);
+        // Calcola media e deviazione standard per ogni punto individualmente
+        // usando una finestra mobile di 7 giorni (o meno se all'inizio/fine)
+        const rollingMeans = [];
+        const rollingUpperBounds = [];
+        const rollingLowerBounds = [];
+        
+        for (let i = 0; i < allValues.length; i++) {
+            // Prendi i punti in una finestra di 7 giorni intorno al punto corrente
+            const windowStart = Math.max(0, i - 3);
+            const windowEnd = Math.min(allValues.length - 1, i + 3);
+            const windowValues = allValues.slice(windowStart, windowEnd + 1);
+            
+            // Calcola media nella finestra
+            const windowMean = windowValues.reduce((sum, val) => sum + val, 0) / windowValues.length;
+            rollingMeans.push(windowMean);
+            
+            // Calcola deviazione standard nella finestra
+            const squaredDiffs = windowValues.map(val => Math.pow(val - windowMean, 2));
+            const variance = squaredDiffs.reduce((sum, val) => sum + val, 0) / windowValues.length;
+            const windowStdDev = Math.sqrt(variance);
+            
+            // Calcola limiti superiore e inferiore
+            rollingUpperBounds.push(windowMean + windowStdDev);
+            rollingLowerBounds.push(windowMean - windowStdDev);
+        }
         
         // Configurazione del grafico
         this.chart = new Chart(ctx, {
@@ -206,26 +229,29 @@ class DatasetVisualizer {
                 labels: labels,
                 datasets: [
                     {
-                        label: 'Dati originali',
-                        data: originalPoints,
+                        label: 'Dati Orario',
+                        data: combinedPoints,
                         borderColor: '#0d6efd',
                         backgroundColor: '#0d6efd',
-                        pointRadius: 5,
+                        pointBackgroundColor: function(context) {
+                            // Punto rosso per dati stimati, blu per originali
+                            const index = context.dataIndex;
+                            return filteredData[index].isOriginal ? '#0d6efd' : '#dc3545';
+                        },
+                        pointBorderColor: function(context) {
+                            const index = context.dataIndex;
+                            return filteredData[index].isOriginal ? '#0d6efd' : '#dc3545';
+                        },
+                        pointRadius: function(context) {
+                            return originalPointSizes[context.dataIndex]; 
+                        },
                         pointHoverRadius: 7,
-                        tension: 0.2
+                        tension: 0.4, // Aumentato per curve più morbide
+                        borderWidth: 2
                     },
                     {
-                        label: 'Dati stimati',
-                        data: estimatedPoints,
-                        borderColor: '#dc3545',
-                        backgroundColor: '#dc3545',
-                        pointRadius: 5,
-                        pointHoverRadius: 7,
-                        tension: 0.2
-                    },
-                    {
-                        label: 'Media',
-                        data: Array(labels.length).fill(mean),
+                        label: 'Media mobile',
+                        data: rollingMeans,
                         borderColor: 'rgba(255, 193, 7, 0.6)',
                         borderWidth: 1,
                         borderDash: [5, 5],
@@ -234,15 +260,16 @@ class DatasetVisualizer {
                     },
                     {
                         label: 'Limite superiore dev. std.',
-                        data: upperBound,
-                        borderColor: 'rgba(13, 110, 253, 0)',
+                        data: rollingUpperBounds,
+                        borderColor: 'rgba(13, 110, 253, 0.4)',
+                        borderWidth: 1,
                         pointRadius: 0,
                         fill: false
                     },
                     {
                         label: 'Limite inferiore dev. std.',
-                        data: lowerBound,
-                        borderColor: 'rgba(13, 110, 253, 0)',
+                        data: rollingLowerBounds,
+                        borderColor: 'rgba(13, 110, 253, 0.4)',
                         backgroundColor: 'rgba(13, 110, 253, 0.2)',
                         pointRadius: 0,
                         fill: '-1'
