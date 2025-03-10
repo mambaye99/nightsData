@@ -9,74 +9,101 @@
     <!-- Librerie esterne da CDN -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
-    <!-- CSS aggiuntivo per mobile -->
+    <!-- CSS aggiuntivo per ottimizzazioni mobile -->
     <style>
-        /* Miglioramenti specifici per mobile */
-        @media (max-width: 480px) {
-            /* Riduci dimensione testo in header */
+        /* Miglioramenti per dispositivi mobili */
+        @media (max-width: 768px) {
+            /* Adatta header per schermi piccoli */
+            .header-container {
+                flex-direction: column;
+                text-align: center;
+            }
+            
+            .quote-container {
+                border-left: none;
+                padding-left: 0;
+                margin-top: 1rem;
+            }
+            
             blockquote {
-                font-size: 1rem !important;
+                font-size: 1.2rem;
             }
             
-            /* Aumenta dimensione del filtro per facilità di tocco */
-            .filter-controls select {
-                height: 44px;
-                font-size: 16px; /* Evita lo zoom automatico su iOS */
-                padding: 8px 12px;
+            .profile-image img {
+                width: 100px;
+                height: 100px;
             }
             
-            /* Migliora la spaziatura nel grafico */
+            main {
+                padding: 0 1rem 1rem;
+            }
+            
             .chart-container {
-                margin: 0;
+                height: 300px;
+                margin: 0.5rem;
                 padding: 0.5rem;
             }
             
-            /* Ottimizza la sezione citazioni */
-            .quotes-section .quote-card {
+            .filter-controls {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            
+            /* Aumenta dimensione controlli touch */
+            .filter-controls select {
+                width: 100%;
+                min-height: 44px;
+                font-size: 16px; /* Evita zoom su iOS */
+                padding: 10px;
+            }
+            
+            /* Legenda più compatta */
+            .legend {
+                justify-content: center;
+            }
+            
+            /* Sezione grafico con meno padding */
+            section.chart-section {
                 padding: 1rem;
-                margin-bottom: 1rem;
-            }
-            
-            /* Aggiunge supporto per gesture touch */
-            .chart-section {
-                touch-action: pan-y; /* Permette lo scroll verticale ma non lo zoom */
-            }
-            
-            /* Bottoni più grandi e spaziati */
-            button {
-                padding: 12px 20px;
-                min-height: 44px; /* Dimensione minima per target touch */
-                min-width: 44px;
-            }
-            
-            /* Migliora visualizzazione footer */
-            footer {
-                padding: 1rem;
-                margin-top: 1rem;
             }
         }
         
-        /* Supporto per schermi molto piccoli */
-        @media (max-width: 360px) {
-            /* Riduzione ulteriore padding/margin */
+        /* Per schermi molto piccoli (telefoni in verticale) */
+        @media (max-width: 480px) {
+            /* Riduce ulteriormente i margini per massimizzare lo spazio */
             section {
+                margin-bottom: 1rem;
                 padding: 0.8rem;
+            }
+            
+            .chart-container {
+                height: 250px;
+            }
+            
+            h2 {
+                font-size: 1.2rem;
+                margin-bottom: 1rem;
+            }
+            
+            .legend-item {
+                padding: 0.3rem;
+                margin: 0.2rem;
+            }
+            
+            blockquote {
+                font-size: 1rem !important;
             }
             
             .profile-image img {
                 width: 80px;
                 height: 80px;
             }
-            
-            h2 {
-                font-size: 1.1rem;
-            }
         }
         
-        /* Orientamento orizzontale su mobile */
+        /* Regole per telefoni in modalità orizzontale */
         @media (max-height: 500px) and (orientation: landscape) {
             header {
-                padding: 0.5rem;
+                padding: 0.8rem;
             }
             
             .header-container {
@@ -88,11 +115,7 @@
             }
             
             .chart-container {
-                height: 200px !important;
-            }
-            
-            .quotes-section {
-                margin-top: 0.5rem;
+                height: 200px;
             }
         }
         
@@ -104,15 +127,12 @@
         input, textarea, button {
             -webkit-appearance: none;
             appearance: none;
-            border-radius: 0;
-            font-size: 16px; /* Evita zoom su input in iOS */
+            font-size: 16px; /* Evita zoom su iOS */
         }
         
         /* Assicurati che il select mantenga la sua apparenza nativa */
         select {
-            font-size: 16px; /* Evita zoom su input in iOS */
-            border-radius: 4px;
-            background-color: white;
+            font-size: 16px; /* Evita zoom su iOS */
             -webkit-appearance: menulist;
             appearance: menulist;
         }
@@ -205,10 +225,12 @@
         <p>&copy; <span id="current-year"></span> - Creato con ❤️</p>
     </footer>
 
-    <!-- Script di verifica e miglioramenti mobile -->
+    <!-- Script di verifica e correttivi -->
     <script>
-        // Verifica che le librerie esterne siano caricate correttamente
+        // Aggiorna l'anno corrente nel footer
         document.addEventListener('DOMContentLoaded', function() {
+            document.getElementById('current-year').textContent = new Date().getFullYear();
+            
             // Nascondi l'indicatore di caricamento quando il grafico è pronto
             const chartLoading = document.getElementById('chart-loading');
             const chartCanvas = document.getElementById('dataChart');
@@ -217,53 +239,16 @@
                 // Nascondi inizialmente il canvas
                 chartCanvas.style.display = 'none';
                 
-                // Configura un observer per attendere che il grafico sia pronto
-                const observer = new MutationObserver(function(mutations) {
-                    if (window.mainChart || (window.datasetVisualizer && window.datasetVisualizer.chart)) {
-                        // Il grafico è pronto, nascondi il loader e mostra il canvas
-                        chartLoading.style.display = 'none';
-                        chartCanvas.style.display = 'block';
-                        
-                        // Assicurati che il filtro per mesi funzioni correttamente
-                        // Verifica che gli event listener siano attivi
-                        if (window.datasetVisualizer && window.datasetVisualizer.monthFilter) {
-                            console.log('Ripristino funzionalità filtro mesi');
-                            const monthFilter = window.datasetVisualizer.monthFilter;
-                            
-                            // Rimuovi tutti gli event listener esistenti
-                            const newMonthFilter = monthFilter.cloneNode(true);
-                            monthFilter.parentNode.replaceChild(newMonthFilter, monthFilter);
-                            
-                            // Aggiorna il riferimento
-                            window.datasetVisualizer.monthFilter = newMonthFilter;
-                            
-                            // Aggiungi nuovamente l'event listener
-                            newMonthFilter.addEventListener('change', function(event) {
-                                console.log('Cambio mese da HTML aggiornato:', event.target.value);
-                                window.datasetVisualizer.handleMonthFilter(event);
-                            });
-                        }
-                        
-                        observer.disconnect();
-                    }
-                });
-                
-                // Osserva cambiamenti nel DOM
-                observer.observe(document.body, { 
-                    childList: true, 
-                    subtree: true 
-                });
-                
-                // Timeout di sicurezza (5 secondi)
+                // Configura un timer per nascondere il loader dopo un tempo massimo
                 setTimeout(function() {
-                    chartLoading.style.display = 'none';
-                    chartCanvas.style.display = 'block';
-                    observer.disconnect();
+                    if (chartLoading) {
+                        chartLoading.style.display = 'none';
+                    }
+                    if (chartCanvas) {
+                        chartCanvas.style.display = 'block';
+                    }
                 }, 5000);
             }
-            
-            // Aggiorna l'anno corrente nel footer
-            document.getElementById('current-year').textContent = new Date().getFullYear();
             
             // Verifica Chart.js
             if (typeof Chart === 'undefined') {
@@ -274,147 +259,172 @@
             if (typeof Papa === 'undefined') {
                 console.error('ERRORE: PapaParse non è stato caricato correttamente');
             }
-            
-            // Migliora interazione su mobile
-            enhanceMobileExperience();
         });
-        
-        // Funzione per migliorare l'esperienza mobile
-        function enhanceMobileExperience() {
-            // Rileva se è un dispositivo mobile
-            const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth <= 768;
-            
-            if (isMobile) {
-                console.log('Dispositivo mobile rilevato, applicazione ottimizzazioni...');
-                
-                // Rimuovi eventuali listener di eventi che potrebbero interferire
-                // con la normale funzionalità del select (NO preventDefault sul touchstart)
-                const selects = document.querySelectorAll('select');
-                selects.forEach(select => {
-                    // Assicurati che l'evento change funzioni correttamente
-                    select.addEventListener('change', function(e) {
-                        console.log('Select cambiato:', this.value);
-                        // Non fare nulla qui, lascia che l'event handler originale gestisca il cambio
-                    });
-                });
-                
-                // Gestione orientamento
-                window.addEventListener('orientationchange', function() {
-                    // Aggiorna il layout dopo il cambio di orientamento
-                    setTimeout(function() {
-                        if (window.datasetVisualizer && window.datasetVisualizer.chart) {
-                            window.datasetVisualizer.updateChart();
-                        }
-                    }, 300);
-                });
-                
-                // Migliora lo scrolling su iOS
-                document.documentElement.style.webkitOverflowScrolling = 'touch';
-                
-                // Correggi il problema del 100vh su iOS
-                const setVh = () => {
-                    const vh = window.innerHeight * 0.01;
-                    document.documentElement.style.setProperty('--vh', `${vh}px`);
-                };
-                
-                // Imposta inizialmente
-                setVh();
-                
-                // Aggiorna al ridimensionamento
-                window.addEventListener('resize', setVh);
-            }
-        }
     </script>
 
     <!-- Script applicazione -->
     <script src="js/chart.js"></script>
     <script src="js/quotes.js"></script>
     
-    <!-- Script per il debug e ripristino funzionalità filtro mesi -->
+    <!-- Script per il fix del filtro mesi -->
     <script>
-        // Controlla se il filtro mesi funziona correttamente dopo il caricamento completo
-        window.addEventListener('load', function() {
-            // Attendi che tutto sia caricato, incluso il grafico
-            setTimeout(function() {
+        // Script per risolvere il problema del filtro mesi
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('Script di riparazione filtro mesi caricato');
+            
+            // Attendi che l'oggetto datasetVisualizer sia definito
+            const checkForDatasetVisualizer = setInterval(function() {
                 if (window.datasetVisualizer) {
-                    console.log('Verifica funzionalità filtro mesi...');
-                    
-                    // Richiama esplicitamente il metodo di aggiornamento dei mesi
-                    // Questo ricreerà le opzioni del select basandosi sui dati disponibili
-                    if (window.datasetVisualizer.updateMonthsFilter) {
-                        console.log('Forzo aggiornamento opzioni mesi...');
-                        window.datasetVisualizer.updateMonthsFilter();
+                    console.log('DatasetVisualizer trovato, avvio riparazione...');
+                    clearInterval(checkForDatasetVisualizer);
+                    fixMonthFilter();
+                }
+            }, 500);
+            
+            // Funzione principale di riparazione
+            function fixMonthFilter() {
+                // Attendi che i dati siano stati caricati e processati
+                const checkForData = setInterval(function() {
+                    if (window.datasetVisualizer.processedData && 
+                        window.datasetVisualizer.processedData.length > 0) {
+                        clearInterval(checkForData);
+                        console.log('Dati processati trovati, inizio riparazione filtro...');
                         
-                        // Verifica che le opzioni siano state aggiornate
-                        const monthFilter = document.getElementById('month-filter');
-                        if (monthFilter) {
-                            console.log('Numero di opzioni dopo aggiornamento:', monthFilter.options.length);
-                            
-                            // Se ci sono meno di 2 opzioni (solo "Tutti i mesi"), prova a ripopolare manualmente
-                            if (monthFilter.options.length < 2 && window.datasetVisualizer.processedData) {
-                                console.log('Ripopolamento manuale delle opzioni...');
-                                
-                                // Recupera tutti i mesi dai dati processati
-                                const availableMonths = new Set();
-                                window.datasetVisualizer.processedData.forEach(item => {
-                                    if (item && item.date) {
-                                        const monthIndex = item.date.getMonth();
-                                        const year = item.date.getFullYear();
-                                        availableMonths.add(`${year}-${monthIndex}`);
-                                    }
-                                });
-                                
-                                // Aggiungi le opzioni
-                                const monthNames = ['Gennaio', 'Febbraio', 'Marzo', 'Aprile', 'Maggio', 'Giugno', 
-                                                   'Luglio', 'Agosto', 'Settembre', 'Ottobre', 'Novembre', 'Dicembre'];
-                                
-                                // Ordina i mesi
-                                const sortedMonths = Array.from(availableMonths).sort();
-                                
-                                // Aggiungi ogni mese come opzione
-                                sortedMonths.forEach(yearMonth => {
-                                    const [year, month] = yearMonth.split('-').map(Number);
-                                    const option = document.createElement('option');
-                                    option.value = yearMonth;  // Usa il formato "YYYY-MM"
-                                    option.textContent = `${monthNames[month]} ${year}`;
-                                    monthFilter.appendChild(option);
-                                });
-                                
-                                console.log('Opzioni dopo ripopolamento manuale:', monthFilter.options.length);
-                            }
-                        }
+                        // Ora possiamo iniziare la riparazione
+                        setTimeout(repopulateMonthFilter, 1000);
                     }
+                }, 500);
+            }
+            
+            // Ripopola il filtro dei mesi
+            function repopulateMonthFilter() {
+                try {
+                    console.log('Inizio riparazione del filtro mesi...');
                     
-                    // Ricrea l'evento change sul select
                     const monthFilter = document.getElementById('month-filter');
-                    if (monthFilter) {
-                        // Rimuovi eventuali listener esistenti clonando il select
-                        const newMonthFilter = monthFilter.cloneNode(true);
-                        monthFilter.parentNode.replaceChild(newMonthFilter, monthFilter);
-                        
-                        // Aggiorna il riferimento nell'oggetto datasetVisualizer
-                        if (window.datasetVisualizer) {
-                            window.datasetVisualizer.monthFilter = newMonthFilter;
-                        }
-                        
-                        // Aggiungi il nuovo event listener
-                        newMonthFilter.addEventListener('change', function(event) {
-                            console.log('Cambio mese selezionato:', event.target.value);
-                            
-                            if (window.datasetVisualizer && window.datasetVisualizer.handleMonthFilter) {
-                                window.datasetVisualizer.handleMonthFilter(event);
-                            } else {
-                                console.error('Handler per il filtro mesi non trovato!');
-                            }
-                        });
+                    if (!monthFilter) {
+                        console.error('Elemento select per i mesi non trovato!');
+                        return;
                     }
                     
-                    // Forza un aggiornamento del grafico
-                    if (window.datasetVisualizer.updateChart) {
+                    // Salva il valore selezionato corrente (se esiste)
+                    const currentValue = monthFilter.value;
+                    console.log('Valore correntemente selezionato:', currentValue);
+                    
+                    // Raccogli tutti i mesi disponibili nei dati
+                    const availableMonths = new Set();
+                    window.datasetVisualizer.processedData.forEach(item => {
+                        if (item && item.date) {
+                            const monthIndex = item.date.getMonth();
+                            const year = item.date.getFullYear();
+                            availableMonths.add(`${year}-${monthIndex}`);
+                        }
+                    });
+                    
+                    console.log('Mesi disponibili trovati nei dati:', availableMonths);
+                    
+                    // Rimuovi tutte le opzioni esistenti
+                    while (monthFilter.options.length > 0) {
+                        monthFilter.remove(0);
+                    }
+                    
+                    // Aggiungi l'opzione "Tutti i mesi"
+                    const allMonthsOption = document.createElement('option');
+                    allMonthsOption.value = 'all';
+                    allMonthsOption.textContent = 'Tutti i mesi';
+                    monthFilter.appendChild(allMonthsOption);
+                    
+                    // Mappa dei nomi dei mesi in italiano
+                    const monthNames = [
+                        'Gennaio', 'Febbraio', 'Marzo', 'Aprile', 'Maggio', 'Giugno', 
+                        'Luglio', 'Agosto', 'Settembre', 'Ottobre', 'Novembre', 'Dicembre'
+                    ];
+                    
+                    // Converti in array e ordina
+                    const sortedMonths = Array.from(availableMonths).sort();
+                    
+                    // Aggiungi ogni mese come opzione
+                    sortedMonths.forEach(yearMonth => {
+                        const [year, month] = yearMonth.split('-').map(Number);
+                        const option = document.createElement('option');
+                        option.value = yearMonth;
+                        option.textContent = `${monthNames[month]} ${year}`;
+                        monthFilter.appendChild(option);
+                        console.log(`Aggiunto mese: ${monthNames[month]} ${year}, valore: ${yearMonth}`);
+                    });
+                    
+                    // Ripristina il valore selezionato precedentemente, se esistente e valido
+                    if (currentValue && 
+                        (currentValue === 'all' || 
+                         Array.from(monthFilter.options).some(opt => opt.value === currentValue))) {
+                        monthFilter.value = currentValue;
+                    } else {
+                        monthFilter.value = 'all';
+                    }
+                    
+                    console.log('Opzioni dopo riparazione:', monthFilter.options.length);
+                    
+                    // Rimuovi l'event listener esistente e ricrealo
+                    const newMonthFilter = monthFilter.cloneNode(true);
+                    monthFilter.parentNode.replaceChild(newMonthFilter, monthFilter);
+                    
+                    // Aggiorna il riferimento nell'oggetto datasetVisualizer
+                    window.datasetVisualizer.monthFilter = newMonthFilter;
+                    
+                    // Aggiungi il nuovo event listener
+                    newMonthFilter.addEventListener('change', function(event) {
+                        console.log('Cambio mese selezionato:', event.target.value);
+                        window.datasetVisualizer.currentMonth = event.target.value;
+                        window.datasetVisualizer.updateChart();
+                    });
+                    
+                    // Forza un aggiornamento del grafico per mostrare tutti i dati
+                    window.datasetVisualizer.currentMonth = 'all';
+                    window.datasetVisualizer.updateChart();
+                    
+                    console.log('Riparazione filtro mesi completata con successo!');
+                    
+                    // Nascondi il loader se è ancora visibile
+                    const chartLoading = document.getElementById('chart-loading');
+                    if (chartLoading) {
+                        chartLoading.style.display = 'none';
+                    }
+                    
+                    // Assicurati che il canvas sia visibile
+                    const chartCanvas = document.getElementById('dataChart');
+                    if (chartCanvas) {
+                        chartCanvas.style.display = 'block';
+                    }
+                } catch (error) {
+                    console.error('Errore durante la riparazione del filtro mesi:', error);
+                }
+            }
+            
+            // Gestione orientamento per dispositivi mobili
+            if ('orientation' in window) {
+                window.addEventListener('orientationchange', function() {
+                    // Attendi che l'orientamento cambi completamente
+                    setTimeout(function() {
+                        if (window.datasetVisualizer && window.datasetVisualizer.chart) {
+                            window.datasetVisualizer.updateChart();
+                        }
+                    }, 300);
+                });
+            }
+            
+            // Ridimensionamento finestra
+            window.addEventListener('resize', function() {
+                // Limita la frequenza di aggiornamento durante il ridimensionamento
+                if (window.resizeTimeout) {
+                    clearTimeout(window.resizeTimeout);
+                }
+                
+                window.resizeTimeout = setTimeout(function() {
+                    if (window.datasetVisualizer && window.datasetVisualizer.chart) {
                         window.datasetVisualizer.updateChart();
                     }
-                }
-            }, 1500); // Aumentato il timeout per dare più tempo al caricamento
+                }, 250);
+            });
         });
     </script>
 </body>
