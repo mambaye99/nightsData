@@ -339,30 +339,82 @@
                 if (window.datasetVisualizer) {
                     console.log('Verifica funzionalità filtro mesi...');
                     
+                    // Richiama esplicitamente il metodo di aggiornamento dei mesi
+                    // Questo ricreerà le opzioni del select basandosi sui dati disponibili
+                    if (window.datasetVisualizer.updateMonthsFilter) {
+                        console.log('Forzo aggiornamento opzioni mesi...');
+                        window.datasetVisualizer.updateMonthsFilter();
+                        
+                        // Verifica che le opzioni siano state aggiornate
+                        const monthFilter = document.getElementById('month-filter');
+                        if (monthFilter) {
+                            console.log('Numero di opzioni dopo aggiornamento:', monthFilter.options.length);
+                            
+                            // Se ci sono meno di 2 opzioni (solo "Tutti i mesi"), prova a ripopolare manualmente
+                            if (monthFilter.options.length < 2 && window.datasetVisualizer.processedData) {
+                                console.log('Ripopolamento manuale delle opzioni...');
+                                
+                                // Recupera tutti i mesi dai dati processati
+                                const availableMonths = new Set();
+                                window.datasetVisualizer.processedData.forEach(item => {
+                                    if (item && item.date) {
+                                        const monthIndex = item.date.getMonth();
+                                        const year = item.date.getFullYear();
+                                        availableMonths.add(`${year}-${monthIndex}`);
+                                    }
+                                });
+                                
+                                // Aggiungi le opzioni
+                                const monthNames = ['Gennaio', 'Febbraio', 'Marzo', 'Aprile', 'Maggio', 'Giugno', 
+                                                   'Luglio', 'Agosto', 'Settembre', 'Ottobre', 'Novembre', 'Dicembre'];
+                                
+                                // Ordina i mesi
+                                const sortedMonths = Array.from(availableMonths).sort();
+                                
+                                // Aggiungi ogni mese come opzione
+                                sortedMonths.forEach(yearMonth => {
+                                    const [year, month] = yearMonth.split('-').map(Number);
+                                    const option = document.createElement('option');
+                                    option.value = yearMonth;  // Usa il formato "YYYY-MM"
+                                    option.textContent = `${monthNames[month]} ${year}`;
+                                    monthFilter.appendChild(option);
+                                });
+                                
+                                console.log('Opzioni dopo ripopolamento manuale:', monthFilter.options.length);
+                            }
+                        }
+                    }
+                    
+                    // Ricrea l'evento change sul select
                     const monthFilter = document.getElementById('month-filter');
                     if (monthFilter) {
-                        console.log('Opzioni disponibili:', monthFilter.options.length);
+                        // Rimuovi eventuali listener esistenti clonando il select
+                        const newMonthFilter = monthFilter.cloneNode(true);
+                        monthFilter.parentNode.replaceChild(newMonthFilter, monthFilter);
                         
-                        // Assicurati che ci sia l'event listener
-                        monthFilter.addEventListener('change', function(event) {
+                        // Aggiorna il riferimento nell'oggetto datasetVisualizer
+                        if (window.datasetVisualizer) {
+                            window.datasetVisualizer.monthFilter = newMonthFilter;
+                        }
+                        
+                        // Aggiungi il nuovo event listener
+                        newMonthFilter.addEventListener('change', function(event) {
                             console.log('Cambio mese selezionato:', event.target.value);
                             
-                            if (window.datasetVisualizer.handleMonthFilter) {
+                            if (window.datasetVisualizer && window.datasetVisualizer.handleMonthFilter) {
                                 window.datasetVisualizer.handleMonthFilter(event);
                             } else {
                                 console.error('Handler per il filtro mesi non trovato!');
                             }
                         });
-                        
-                        // Forza l'aggiornamento del grafico
-                        if (window.datasetVisualizer.updateMonthsFilter) {
-                            window.datasetVisualizer.updateMonthsFilter();
-                        }
-                    } else {
-                        console.error('Select per filtro mesi non trovato!');
+                    }
+                    
+                    // Forza un aggiornamento del grafico
+                    if (window.datasetVisualizer.updateChart) {
+                        window.datasetVisualizer.updateChart();
                     }
                 }
-            }, 1000); // Attendiamo 1 secondo per assicurarci che tutto sia caricato
+            }, 1500); // Aumentato il timeout per dare più tempo al caricamento
         });
     </script>
 </body>
