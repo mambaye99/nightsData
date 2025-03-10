@@ -2,166 +2,13 @@
 <html lang="it">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Visualizzazione Dataset</title>
     <!-- CSS -->
     <link rel="stylesheet" href="css/style.css">
     <!-- Librerie esterne da CDN -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
-    <!-- CSS aggiuntivo per ottimizzazioni mobile -->
-    <style>
-        /* Miglioramenti per dispositivi mobili */
-        @media (max-width: 768px) {
-            /* Adatta header per schermi piccoli */
-            .header-container {
-                flex-direction: column;
-                text-align: center;
-            }
-            
-            .quote-container {
-                border-left: none;
-                padding-left: 0;
-                margin-top: 1rem;
-            }
-            
-            blockquote {
-                font-size: 1.2rem;
-            }
-            
-            .profile-image img {
-                width: 100px;
-                height: 100px;
-            }
-            
-            main {
-                padding: 0 1rem 1rem;
-            }
-            
-            .chart-container {
-                height: 300px;
-                margin: 0.5rem;
-                padding: 0.5rem;
-            }
-            
-            .filter-controls {
-                flex-direction: column;
-                align-items: flex-start;
-            }
-            
-            /* Aumenta dimensione controlli touch */
-            .filter-controls select {
-                width: 100%;
-                min-height: 44px;
-                font-size: 16px; /* Evita zoom su iOS */
-                padding: 10px;
-            }
-            
-            /* Legenda più compatta */
-            .legend {
-                justify-content: center;
-            }
-            
-            /* Sezione grafico con meno padding */
-            section.chart-section {
-                padding: 1rem;
-            }
-        }
-        
-        /* Per schermi molto piccoli (telefoni in verticale) */
-        @media (max-width: 480px) {
-            /* Riduce ulteriormente i margini per massimizzare lo spazio */
-            section {
-                margin-bottom: 1rem;
-                padding: 0.8rem;
-            }
-            
-            .chart-container {
-                height: 250px;
-            }
-            
-            h2 {
-                font-size: 1.2rem;
-                margin-bottom: 1rem;
-            }
-            
-            .legend-item {
-                padding: 0.3rem;
-                margin: 0.2rem;
-            }
-            
-            blockquote {
-                font-size: 1rem !important;
-            }
-            
-            .profile-image img {
-                width: 80px;
-                height: 80px;
-            }
-        }
-        
-        /* Regole per telefoni in modalità orizzontale */
-        @media (max-height: 500px) and (orientation: landscape) {
-            header {
-                padding: 0.8rem;
-            }
-            
-            .header-container {
-                flex-direction: row !important;
-            }
-            
-            .profile-image {
-                margin-right: 1rem;
-            }
-            
-            .chart-container {
-                height: 200px;
-            }
-        }
-        
-        /* Fix per problemi comuni su mobile */
-        * {
-            -webkit-tap-highlight-color: rgba(0,0,0,0.1);
-        }
-        
-        input, textarea, button {
-            -webkit-appearance: none;
-            appearance: none;
-            font-size: 16px; /* Evita zoom su iOS */
-        }
-        
-        /* Assicurati che il select mantenga la sua apparenza nativa */
-        select {
-            font-size: 16px; /* Evita zoom su iOS */
-            -webkit-appearance: menulist;
-            appearance: menulist;
-        }
-        
-        /* Aggiungi animazione di caricamento */
-        .loading-spinner {
-            display: inline-block;
-            width: 40px;
-            height: 40px;
-            border: 4px solid rgba(0, 0, 0, 0.1);
-            border-radius: 50%;
-            border-top-color: #0d6efd;
-            animation: spin 1s ease-in-out infinite;
-            margin: 2rem auto;
-        }
-        
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
-        
-        /* Stato di caricamento */
-        .chart-loading {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            height: 200px;
-        }
-    </style>
 </head>
 <body>
     <div class="background-container">
@@ -175,8 +22,8 @@
             </div>
             <div class="quote-container">
                 <blockquote>
-                    <p id="main-quote">"Ci sono due tipi di uomini: quelli che parlano di donne e quelli che parlano con le donne; io di donne preferisco non parlare"</p>
-                    <cite id="main-author">— The Attorney</cite>
+                    <p id="main-quote">"La curiosità è la cosa più preziosa che abbiamo."</p>
+                    <cite id="main-author">— Albert Einstein</cite>
                 </blockquote>
             </div>
         </div>
@@ -184,7 +31,7 @@
 
     <main>
         <section class="chart-section">
-            <h2>Rilascio della Penna</h2>
+            <h2>Visualizzazione Dataset</h2>
             
             <div class="filter-controls">
                 <label for="month-filter">Filtra per mese:</label>
@@ -195,11 +42,6 @@
             </div>
             
             <div class="chart-container">
-                <!-- Indicatore di caricamento -->
-                <div id="chart-loading" class="chart-loading">
-                    <div class="loading-spinner"></div>
-                    <p>Caricamento dati...</p>
-                </div>
                 <canvas id="dataChart"></canvas>
             </div>
             
@@ -225,30 +67,12 @@
         <p>&copy; <span id="current-year"></span> - Creato con ❤️</p>
     </footer>
 
-    <!-- Script di verifica e correttivi -->
+    <!-- Script di verifica -->
     <script>
-        // Aggiorna l'anno corrente nel footer
+        // Verifica che le librerie esterne siano caricate correttamente
         document.addEventListener('DOMContentLoaded', function() {
+            // Aggiorna l'anno corrente nel footer
             document.getElementById('current-year').textContent = new Date().getFullYear();
-            
-            // Nascondi l'indicatore di caricamento quando il grafico è pronto
-            const chartLoading = document.getElementById('chart-loading');
-            const chartCanvas = document.getElementById('dataChart');
-            
-            if (chartLoading && chartCanvas) {
-                // Nascondi inizialmente il canvas
-                chartCanvas.style.display = 'none';
-                
-                // Configura un timer per nascondere il loader dopo un tempo massimo
-                setTimeout(function() {
-                    if (chartLoading) {
-                        chartLoading.style.display = 'none';
-                    }
-                    if (chartCanvas) {
-                        chartCanvas.style.display = 'block';
-                    }
-                }, 5000);
-            }
             
             // Verifica Chart.js
             if (typeof Chart === 'undefined') {
@@ -265,167 +89,5 @@
     <!-- Script applicazione -->
     <script src="js/chart.js"></script>
     <script src="js/quotes.js"></script>
-    
-    <!-- Script per il fix del filtro mesi -->
-    <script>
-        // Script per risolvere il problema del filtro mesi
-        document.addEventListener('DOMContentLoaded', function() {
-            console.log('Script di riparazione filtro mesi caricato');
-            
-            // Attendi che l'oggetto datasetVisualizer sia definito
-            const checkForDatasetVisualizer = setInterval(function() {
-                if (window.datasetVisualizer) {
-                    console.log('DatasetVisualizer trovato, avvio riparazione...');
-                    clearInterval(checkForDatasetVisualizer);
-                    fixMonthFilter();
-                }
-            }, 500);
-            
-            // Funzione principale di riparazione
-            function fixMonthFilter() {
-                // Attendi che i dati siano stati caricati e processati
-                const checkForData = setInterval(function() {
-                    if (window.datasetVisualizer.processedData && 
-                        window.datasetVisualizer.processedData.length > 0) {
-                        clearInterval(checkForData);
-                        console.log('Dati processati trovati, inizio riparazione filtro...');
-                        
-                        // Ora possiamo iniziare la riparazione
-                        setTimeout(repopulateMonthFilter, 1000);
-                    }
-                }, 500);
-            }
-            
-            // Ripopola il filtro dei mesi
-            function repopulateMonthFilter() {
-                try {
-                    console.log('Inizio riparazione del filtro mesi...');
-                    
-                    const monthFilter = document.getElementById('month-filter');
-                    if (!monthFilter) {
-                        console.error('Elemento select per i mesi non trovato!');
-                        return;
-                    }
-                    
-                    // Salva il valore selezionato corrente (se esiste)
-                    const currentValue = monthFilter.value;
-                    console.log('Valore correntemente selezionato:', currentValue);
-                    
-                    // Raccogli tutti i mesi disponibili nei dati
-                    const availableMonths = new Set();
-                    window.datasetVisualizer.processedData.forEach(item => {
-                        if (item && item.date) {
-                            const monthIndex = item.date.getMonth();
-                            const year = item.date.getFullYear();
-                            availableMonths.add(`${year}-${monthIndex}`);
-                        }
-                    });
-                    
-                    console.log('Mesi disponibili trovati nei dati:', availableMonths);
-                    
-                    // Rimuovi tutte le opzioni esistenti
-                    while (monthFilter.options.length > 0) {
-                        monthFilter.remove(0);
-                    }
-                    
-                    // Aggiungi l'opzione "Tutti i mesi"
-                    const allMonthsOption = document.createElement('option');
-                    allMonthsOption.value = 'all';
-                    allMonthsOption.textContent = 'Tutti i mesi';
-                    monthFilter.appendChild(allMonthsOption);
-                    
-                    // Mappa dei nomi dei mesi in italiano
-                    const monthNames = [
-                        'Gennaio', 'Febbraio', 'Marzo', 'Aprile', 'Maggio', 'Giugno', 
-                        'Luglio', 'Agosto', 'Settembre', 'Ottobre', 'Novembre', 'Dicembre'
-                    ];
-                    
-                    // Converti in array e ordina
-                    const sortedMonths = Array.from(availableMonths).sort();
-                    
-                    // Aggiungi ogni mese come opzione
-                    sortedMonths.forEach(yearMonth => {
-                        const [year, month] = yearMonth.split('-').map(Number);
-                        const option = document.createElement('option');
-                        option.value = yearMonth;
-                        option.textContent = `${monthNames[month]} ${year}`;
-                        monthFilter.appendChild(option);
-                        console.log(`Aggiunto mese: ${monthNames[month]} ${year}, valore: ${yearMonth}`);
-                    });
-                    
-                    // Ripristina il valore selezionato precedentemente, se esistente e valido
-                    if (currentValue && 
-                        (currentValue === 'all' || 
-                         Array.from(monthFilter.options).some(opt => opt.value === currentValue))) {
-                        monthFilter.value = currentValue;
-                    } else {
-                        monthFilter.value = 'all';
-                    }
-                    
-                    console.log('Opzioni dopo riparazione:', monthFilter.options.length);
-                    
-                    // Rimuovi l'event listener esistente e ricrealo
-                    const newMonthFilter = monthFilter.cloneNode(true);
-                    monthFilter.parentNode.replaceChild(newMonthFilter, monthFilter);
-                    
-                    // Aggiorna il riferimento nell'oggetto datasetVisualizer
-                    window.datasetVisualizer.monthFilter = newMonthFilter;
-                    
-                    // Aggiungi il nuovo event listener
-                    newMonthFilter.addEventListener('change', function(event) {
-                        console.log('Cambio mese selezionato:', event.target.value);
-                        window.datasetVisualizer.currentMonth = event.target.value;
-                        window.datasetVisualizer.updateChart();
-                    });
-                    
-                    // Forza un aggiornamento del grafico per mostrare tutti i dati
-                    window.datasetVisualizer.currentMonth = 'all';
-                    window.datasetVisualizer.updateChart();
-                    
-                    console.log('Riparazione filtro mesi completata con successo!');
-                    
-                    // Nascondi il loader se è ancora visibile
-                    const chartLoading = document.getElementById('chart-loading');
-                    if (chartLoading) {
-                        chartLoading.style.display = 'none';
-                    }
-                    
-                    // Assicurati che il canvas sia visibile
-                    const chartCanvas = document.getElementById('dataChart');
-                    if (chartCanvas) {
-                        chartCanvas.style.display = 'block';
-                    }
-                } catch (error) {
-                    console.error('Errore durante la riparazione del filtro mesi:', error);
-                }
-            }
-            
-            // Gestione orientamento per dispositivi mobili
-            if ('orientation' in window) {
-                window.addEventListener('orientationchange', function() {
-                    // Attendi che l'orientamento cambi completamente
-                    setTimeout(function() {
-                        if (window.datasetVisualizer && window.datasetVisualizer.chart) {
-                            window.datasetVisualizer.updateChart();
-                        }
-                    }, 300);
-                });
-            }
-            
-            // Ridimensionamento finestra
-            window.addEventListener('resize', function() {
-                // Limita la frequenza di aggiornamento durante il ridimensionamento
-                if (window.resizeTimeout) {
-                    clearTimeout(window.resizeTimeout);
-                }
-                
-                window.resizeTimeout = setTimeout(function() {
-                    if (window.datasetVisualizer && window.datasetVisualizer.chart) {
-                        window.datasetVisualizer.updateChart();
-                    }
-                }, 250);
-            });
-        });
-    </script>
 </body>
 </html>
