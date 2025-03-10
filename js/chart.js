@@ -37,12 +37,12 @@ class DatasetVisualizer {
             
             // Dati di esempio integrati - usiamo questi come fallback se il caricamento del CSV fallisce
             const sampleData = [
-                { giorno: "13/01/2025", orario: 17.23 },
-                { giorno: "14/01/2025", orario: 17.01 },
-                { giorno: "15/01/2025", orario: 17.52 },
-                { giorno: "16/01/2025", orario: 17.37 },
-                { giorno: "20/01/2025", orario: 17.50 },
-                { giorno: "21/01/2025", orario: 17.21 }
+                { giorno: "13/01/2025", orario: "17,23" },
+                { giorno: "14/01/2025", orario: "17,01" },
+                { giorno: "15/01/2025", orario: "17,52" },
+                { giorno: "16/01/2025", orario: "17,37" },
+                { giorno: "20/01/2025", orario: "17,50" },
+                { giorno: "21/01/2025", orario: "17,21" }
             ];
 
             // Prima proviamo a caricare il file CSV
@@ -146,52 +146,6 @@ class DatasetVisualizer {
         
         // Inizializza il grafico
         this.initChart();
-    }
-    
-    // Aggiorna il filtro dei mesi per mostrare solo i mesi disponibili nei dati
-    updateMonthsFilter() {
-        if (!this.monthFilter) {
-            console.error('Elemento select per i mesi non trovato!');
-            return;
-        }
-        
-        console.log('Aggiornamento filtro mesi...');
-        
-        // Raccogli tutti i mesi unici presenti nel dataset
-        const availableMonths = new Set();
-        this.processedData.forEach(item => {
-            const monthIndex = item.date.getMonth();
-            const year = item.date.getFullYear();
-            availableMonths.add(`${year}-${monthIndex}`);
-        });
-        
-        console.log('Mesi disponibili:', availableMonths);
-        
-        // Cancella le opzioni precedenti, tranne "Tutti i mesi"
-        while (this.monthFilter.options.length > 1) {
-            this.monthFilter.remove(1);
-        }
-        
-        // Aggiungi solo i mesi disponibili
-        const monthNames = ['Gennaio', 'Febbraio', 'Marzo', 'Aprile', 'Maggio', 'Giugno', 
-                           'Luglio', 'Agosto', 'Settembre', 'Ottobre', 'Novembre', 'Dicembre'];
-        
-        // Converti in array e ordina
-        const sortedMonths = Array.from(availableMonths).sort();
-        console.log('Mesi ordinati:', sortedMonths);
-        
-        // Aggiungi le nuove opzioni
-        sortedMonths.forEach(yearMonth => {
-            const [year, month] = yearMonth.split('-').map(Number);
-            const option = document.createElement('option');
-            option.value = yearMonth;  // Usa il formato "YYYY-MM"
-            option.textContent = `${monthNames[month]} ${year}`;
-            this.monthFilter.appendChild(option);
-            console.log(`Aggiunto mese: ${monthNames[month]} ${year}, valore: ${yearMonth}`);
-        });
-        
-        // Verifica che ci siano opzioni
-        console.log('Opzioni dopo aggiornamento:', this.monthFilter.options.length);
     }
     
     // Stima i valori mancanti, escludendo i weekend
@@ -360,39 +314,22 @@ class DatasetVisualizer {
         return null;
     }
     
-    // Calcola la deviazione standard
-    calculateStdDev(data) {
-        const values = data.map(item => item.time);
-        const mean = values.reduce((sum, val) => sum + val, 0) / values.length;
-        const squaredDiffs = values.map(val => Math.pow(val - mean, 2));
-        const variance = squaredDiffs.reduce((sum, val) => sum + val, 0) / values.length;
-        return Math.sqrt(variance);
-    }
-    
-    // Calcola le bande di deviazione standard mobile
-    calculateRollingStdDev(data, windowSize) {
-        console.log('Calcolo bande deviazione standard dinamiche...');
+    // Calcola l'intervallo di confidenza al 95% per i dati filtrati
+    calculateConfidenceInterval(data, windowSize = 5) {
+        console.log('Calcolo intervallo di confidenza al 95%...');
         const upper = [];
         const lower = [];
         
-        // Se non ci sono abbastanza dati, usa una deviazione statica
+        // Se non ci sono abbastanza dati, restituisci null
         if (data.length < 3) {
-            console.log('Troppi pochi punti per una deviazione dinamica, uso statica');
-            const mean = data.reduce((sum, val) => sum + val, 0) / data.length;
-            const squaredDiffs = data.map(val => Math.pow(val - mean, 2));
-            const variance = squaredDiffs.reduce((sum, diff) => sum + diff, 0) / data.length;
-            const stdDev = Math.sqrt(variance);
-            
-            // Applica la deviazione standard a ogni punto
-            for (const value of data) {
-                upper.push(value + stdDev);
-                lower.push(value - stdDev);
-            }
-            
-            return { upper, lower };
+            console.log('Troppi pochi punti per calcolare l\'intervallo di confidenza');
+            return null;
         }
         
-        // Per ogni punto, calcola la deviazione standard in una finestra mobile
+        // Valore t-student per 95% di confidenza 
+        const tValue = data.length < 5 ? 2.78 : 1.96;
+        
+        // Per ogni punto, calcola l'intervallo di confidenza in una finestra mobile
         for (let i = 0; i < data.length; i++) {
             // Determina la finestra di punti intorno al punto i
             const halfWindow = Math.floor(windowSize / 2);
@@ -409,16 +346,133 @@ class DatasetVisualizer {
             const variance = squaredDiffs.reduce((acc, val) => acc + val, 0) / windowData.length;
             const stdDev = Math.sqrt(variance);
             
-            // Applica la deviazione standard centrata sul valore attuale (non sulla media globale)
-            upper.push(data[i] + stdDev);
-            lower.push(Math.max(0, data[i] - stdDev)); // Evita valori negativi se non hanno senso
+            // Calcola l'errore standard
+            const stderr = stdDev / Math.sqrt(windowData.length);
             
+            // Calcola l'intervallo di confidenza al 95%
+            const marginOfError = tValue * stderr;
+            
+            // Applica l'intervallo centrato sul valore attuale (non sulla media)
+            upper.push(data[i] + marginOfError);
+            lower.push(Math.max(0, data[i] - marginOfError)); // Evita valori negativi se non hanno senso
+            
+            // Log di debug per alcuni punti campione
             if (i === 0 || i === data.length - 1 || i === Math.floor(data.length/2)) {
-                console.log(`Punto ${i}: valore=${data[i].toFixed(2)}, stdDev=${stdDev.toFixed(2)}, banda=[${lower[i].toFixed(2)}-${upper[i].toFixed(2)}]`);
+                console.log(`Punto ${i}: valore=${data[i].toFixed(2)}, IC95=[${lower[i].toFixed(2)}-${upper[i].toFixed(2)}]`);
             }
         }
         
         return { upper, lower };
+    }
+    
+    // Aggiorna il filtro dei mesi per mostrare solo i mesi disponibili nei dati
+    updateMonthsFilter() {
+        if (!this.monthFilter) {
+            console.error('Elemento select per i mesi non trovato!');
+            return;
+        }
+        
+        console.log('Aggiornamento filtro mesi...');
+        
+        // Raccogli tutti i mesi unici presenti nel dataset
+        const availableMonths = new Set();
+        this.processedData.forEach(item => {
+            const monthIndex = item.date.getMonth();
+            const year = item.date.getFullYear();
+            availableMonths.add(`${year}-${monthIndex}`);
+        });
+        
+        console.log('Mesi disponibili:', availableMonths);
+        
+        // Cancella le opzioni precedenti, tranne "Tutti i mesi"
+        while (this.monthFilter.options.length > 1) {
+            this.monthFilter.remove(1);
+        }
+        
+        // Aggiungi solo i mesi disponibili
+        const monthNames = ['Gennaio', 'Febbraio', 'Marzo', 'Aprile', 'Maggio', 'Giugno', 
+                           'Luglio', 'Agosto', 'Settembre', 'Ottobre', 'Novembre', 'Dicembre'];
+        
+        // Converti in array e ordina
+        const sortedMonths = Array.from(availableMonths).sort();
+        console.log('Mesi ordinati:', sortedMonths);
+        
+        // Aggiungi le nuove opzioni
+        sortedMonths.forEach(yearMonth => {
+            const [year, month] = yearMonth.split('-').map(Number);
+            const option = document.createElement('option');
+            option.value = yearMonth;  // Usa il formato "YYYY-MM"
+            option.textContent = `${monthNames[month]} ${year}`;
+            this.monthFilter.appendChild(option);
+            console.log(`Aggiunto mese: ${monthNames[month]} ${year}, valore: ${yearMonth}`);
+        });
+        
+        // Verifica che ci siano opzioni
+        console.log('Opzioni dopo aggiornamento:', this.monthFilter.options.length);
+    }
+    
+    // Gestisce il cambio di filtro del mese
+    handleMonthFilter(event) {
+        console.log('Cambio filtro mese:', event.target.value);
+        this.currentMonth = event.target.value;
+        
+        // Assicuriamoci che il valore sia valido
+        if (this.currentMonth !== 'all' && !this.currentMonth.includes('-')) {
+            console.error('Formato mese non valido:', this.currentMonth);
+            this.currentMonth = 'all'; // Fallback a tutti i mesi
+        }
+        
+        // Aggiorna il grafico con il nuovo filtro
+        this.updateChart();
+    }
+    
+    // Aggiorna il grafico con nuovi dati filtrati
+    updateChart() {
+        if (!this.chart) {
+            console.error('Chart non inizializzato');
+            return;
+        }
+        
+        // Distruggi il grafico esistente
+        this.chart.destroy();
+        
+        // Crea un nuovo grafico con i dati filtrati
+        try {
+            this.initChart();
+            console.log('Grafico aggiornato con filtro mese:', this.currentMonth);
+        } catch (error) {
+            console.error('Errore durante l\'aggiornamento del grafico:', error);
+            this.showError('Errore durante l\'aggiornamento del grafico');
+        }
+    }
+    
+    // Ottieni i dati filtrati per il mese corrente
+    getFilteredData() {
+        if (this.currentMonth === 'all') {
+            return this.processedData;
+        }
+        
+        // Il nuovo formato è "YYYY-MM"
+        const [year, month] = this.currentMonth.split('-').map(Number);
+        
+        return this.processedData.filter(item => {
+            return item.date.getFullYear() === year && item.date.getMonth() === month;
+        });
+    }
+    
+    // Formatta una data per la visualizzazione
+    formatDate(date) {
+        return new Date(date).toLocaleDateString('it-IT', {
+            day: '2-digit',
+            month: '2-digit'
+        });
+    }
+    
+    // Converte un valore decimale in formato orario (HH:MM)
+    decimalToTimeFormat(decimal) {
+        const hour = Math.floor(decimal);
+        const minutes = Math.round((decimal - hour) * 60);
+        return `${hour}:${minutes.toString().padStart(2, '0')}`;
     }
     
     // Inizializza il grafico Chart.js
@@ -476,26 +530,58 @@ class DatasetVisualizer {
         console.log(`Range asse Y: min=${minValue.toFixed(2)}, max=${maxValue.toFixed(2)}, range=${range.toFixed(2)}`);
         console.log(`Scala asse Y con padding: ${yMin.toFixed(2)} - ${yMax.toFixed(2)}`);
         
+        // Calcola l'intervallo di confidenza al 95%
+        const confidenceInterval = this.calculateConfidenceInterval(allTimes);
+        
+        // Crea i dataset
+        const datasets = [
+            {
+                label: 'Orario',
+                data: dataPoints,
+                borderColor: '#0d6efd',
+                tension: 0.4,
+                borderWidth: 2,
+                fill: false,
+                pointBackgroundColor: pointColors,
+                pointBorderColor: pointColors,
+                pointRadius: 5,
+                pointHoverRadius: 7,
+                spanGaps: true
+            }
+        ];
+        
+        // Aggiungi i dataset dell'intervallo di confidenza se disponibili
+        if (confidenceInterval) {
+            datasets.push(
+                {
+                    label: 'Limite superiore IC 95%',
+                    data: confidenceInterval.upper,
+                    borderColor: 'rgba(13, 110, 253, 0.3)',
+                    backgroundColor: 'rgba(13, 110, 253, 0)',
+                    borderWidth: 1,
+                    borderDash: [5, 5],
+                    pointRadius: 0,
+                    fill: false
+                },
+                {
+                    label: 'Limite inferiore IC 95%',
+                    data: confidenceInterval.lower,
+                    borderColor: 'rgba(13, 110, 253, 0.3)',
+                    backgroundColor: 'rgba(13, 110, 253, 0.2)',
+                    borderWidth: 1,
+                    borderDash: [5, 5],
+                    pointRadius: 0,
+                    fill: 1 // Riempi tra questo dataset e quello sopra
+                }
+            );
+        }
+        
         // Configurazione del grafico
         this.chart = new Chart(ctx, {
             type: 'line',
             data: {
                 labels: labels,
-                datasets: [
-                    {
-                        label: 'Orario',
-                        data: dataPoints,
-                        borderColor: '#0d6efd',
-                        tension: 0.4,
-                        borderWidth: 2,
-                        fill: false,
-                        pointBackgroundColor: pointColors,
-                        pointBorderColor: pointColors,
-                        pointRadius: 5,
-                        pointHoverRadius: 7,
-                        spanGaps: true
-                    }
-                ]
+                datasets: datasets
             },
             options: {
                 responsive: true,
@@ -507,7 +593,7 @@ class DatasetVisualizer {
                 plugins: {
                     title: {
                         display: true,
-                        text: 'Dati giornalieri con stime',
+                        text: 'Dati giornalieri con intervallo di confidenza 95%',
                         font: {
                             size: 16,
                             weight: 'bold'
@@ -523,7 +609,11 @@ class DatasetVisualizer {
                                     const index = context.dataIndex;
                                     const isOriginal = filteredData[index].isOriginal;
                                     const tipo = isOriginal ? "originale" : "stimato";
-                                    return `Orario (${tipo}): ${context.raw.toFixed(2)}`;
+                                    return `Orario (${tipo}): ${this.decimalToTimeFormat(context.raw)}`;
+                                } else if (context.datasetIndex === 1) {
+                                    return `Limite superiore IC 95%: ${this.decimalToTimeFormat(context.raw)}`;
+                                } else if (context.datasetIndex === 2) {
+                                    return `Limite inferiore IC 95%: ${this.decimalToTimeFormat(context.raw)}`;
                                 }
                                 return '';
                             }
@@ -555,71 +645,15 @@ class DatasetVisualizer {
                         min: yMin,
                         max: yMax,
                         ticks: {
-                            // Formato con due decimali
-                            callback: function(value) {
-                                return value.toFixed(2);
+                            // Usiamo step di 15 minuti (0.25 ore)
+                            stepSize: 0.25,
+                            callback: (value) => {
+                                return this.decimalToTimeFormat(value);
                             }
                         }
                     }
                 }
             }
-        });
-    }
-    
-    // Aggiorna il grafico con nuovi dati filtrati
-    updateChart() {
-        if (!this.chart) {
-            console.error('Chart non inizializzato');
-            return;
-        }
-        
-        // Distruggi il grafico esistente
-        this.chart.destroy();
-        
-        // Crea un nuovo grafico con i dati filtrati
-        try {
-            this.initChart();
-            console.log('Grafico aggiornato con filtro mese:', this.currentMonth);
-        } catch (error) {
-            console.error('Errore durante l\'aggiornamento del grafico:', error);
-            this.showError('Errore durante l\'aggiornamento del grafico');
-        }
-    }
-    
-    // Gestisce il cambio di filtro del mese
-    handleMonthFilter(event) {
-        console.log('Cambio filtro mese:', event.target.value);
-        this.currentMonth = event.target.value;
-        
-        // Assicuriamoci che il valore sia valido
-        if (this.currentMonth !== 'all' && !this.currentMonth.includes('-')) {
-            console.error('Formato mese non valido:', this.currentMonth);
-            this.currentMonth = 'all'; // Fallback a tutti i mesi
-        }
-        
-        // Aggiorna il grafico con il nuovo filtro
-        this.updateChart();
-    }
-    
-    // Ottieni i dati filtrati per il mese corrente
-    getFilteredData() {
-        if (this.currentMonth === 'all') {
-            return this.processedData;
-        }
-        
-        // Il nuovo formato è "YYYY-MM"
-        const [year, month] = this.currentMonth.split('-').map(Number);
-        
-        return this.processedData.filter(item => {
-            return item.date.getFullYear() === year && item.date.getMonth() === month;
-        });
-    }
-    
-    // Formatta una data per la visualizzazione
-    formatDate(date) {
-        return new Date(date).toLocaleDateString('it-IT', {
-            day: '2-digit',
-            month: '2-digit'
         });
     }
     
