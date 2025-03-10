@@ -37,24 +37,12 @@ class DatasetVisualizer {
             
             // Dati di esempio integrati - usiamo questi come fallback se il caricamento del CSV fallisce
             const sampleData = [
-                { giorno: "2023-01-02", orario: 9.30 },
-                { giorno: "2023-01-03", orario: 10.15 },
-                { giorno: "2023-01-04", orario: 9.45 },
-                { giorno: "2023-01-05", orario: 10.00 },
-                { giorno: "2023-01-09", orario: 9.25 },
-                { giorno: "2023-01-10", orario: 9.45 },
-                { giorno: "2023-01-12", orario: 10.30 },
-                { giorno: "2023-01-16", orario: 9.15 },
-                { giorno: "2023-01-17", orario: 9.30 },
-                { giorno: "2023-01-18", orario: 9.45 },
-                { giorno: "2023-01-19", orario: 10.00 },
-                { giorno: "2023-01-20", orario: 10.15 },
-                { giorno: "2023-01-23", orario: 9.30 },
-                { giorno: "2023-01-24", orario: 9.45 },
-                { giorno: "2023-01-26", orario: 10.30 },
-                { giorno: "2023-01-27", orario: 10.45 },
-                { giorno: "2023-01-30", orario: 9.15 },
-                { giorno: "2023-01-31", orario: 9.30 }
+                { giorno: "13/01/2025", orario: 17.23 },
+                { giorno: "14/01/2025", orario: 17.01 },
+                { giorno: "15/01/2025", orario: 17.52 },
+                { giorno: "16/01/2025", orario: 17.37 },
+                { giorno: "20/01/2025", orario: 17.50 },
+                { giorno: "21/01/2025", orario: 17.21 }
             ];
 
             // Prima proviamo a caricare il file CSV
@@ -75,8 +63,9 @@ class DatasetVisualizer {
                 // Utilizzo di PapaParse per il parsing del CSV
                 Papa.parse(csvData, {
                     header: true,
-                    dynamicTyping: true,
+                    dynamicTyping: false, // Manteniamo come stringhe per gestire il formato italiano
                     skipEmptyLines: true,
+                    delimiter: ';', // Usa punto e virgola come separatore
                     complete: (results) => {
                         console.log('Risultati del parsing:', results);
                         
@@ -113,17 +102,41 @@ class DatasetVisualizer {
     
     // Processa i dati grezzi
     processData(rawData) {
-        // Assume che il CSV abbia colonne 'giorno' e 'orario'
+        // Converti il formato italiano (DD/MM/YYYY e virgola come separatore decimale)
         this.originalData = rawData.map(row => {
+            // Estrai le componenti della data nel formato DD/MM/YYYY
+            const dateParts = row.giorno.split('/');
+            if (dateParts.length !== 3) {
+                console.warn(`Formato data non valido: ${row.giorno}`);
+                return null;
+            }
+            
+            // Crea data in formato corretto (anno, mese-1, giorno)
+            const date = new Date(
+                parseInt(dateParts[2]), // Anno
+                parseInt(dateParts[1]) - 1, // Mese (0-11)
+                parseInt(dateParts[0]) // Giorno
+            );
+            
+            // Gestisci il valore orario (converte da formato italiano con virgola a float)
+            let time = null;
+            if (row.orario && row.orario.trim() !== '') {
+                // Sostituisci la virgola con il punto per il parsing numerico
+                time = parseFloat(row.orario.replace(',', '.'));
+            }
+            
             return {
-                date: new Date(row.giorno),
-                time: parseFloat(row.orario),
-                isOriginal: true
+                date: date,
+                time: time,
+                isOriginal: time !== null
             };
-        }).filter(item => item.time !== null && !isNaN(item.time) && !isNaN(item.date.getTime()));
+        }).filter(item => item !== null); // Rimuovi elementi nulli
         
         // Ordina per data
         this.originalData.sort((a, b) => a.date - b.date);
+        
+        // Aggiungi log per debug
+        console.log('Dati originali processati:', this.originalData);
         
         // Stima i valori mancanti (esclusi i weekend)
         this.processedData = this.estimateMissingValues(this.originalData);
