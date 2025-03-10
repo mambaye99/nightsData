@@ -514,6 +514,10 @@ class DatasetVisualizer {
                         font: {
                             size: 16,
                             weight: 'bold'
+                        },
+                        padding: {
+                            top: 10,
+                            bottom: 15
                         }
                     },
                     tooltip: {
@@ -530,7 +534,13 @@ class DatasetVisualizer {
                                 }
                                 return '';
                             }
-                        }
+                        },
+                        backgroundColor: 'rgba(0, 0, 0, 0.75)',
+                        titleFont: {
+                            weight: 'bold'
+                        },
+                        padding: 10,
+                        cornerRadius: 4
                     },
                     legend: {
                         display: false
@@ -539,30 +549,62 @@ class DatasetVisualizer {
                 scales: {
                     x: {
                         grid: {
-                            color: 'rgba(255, 255, 255, 0.1)'
+                            color: 'rgba(0, 0, 0, 0.1)',
+                            lineWidth: 1,
+                            drawTicks: true,
+                            drawBorder: true,
+                            borderDash: [2, 2],
+                            tickLength: 4
                         },
                         ticks: {
                             maxRotation: 45,
-                            minRotation: 45
+                            minRotation: 45,
+                            color: '#555',
+                            font: {
+                                size: 11
+                            },
+                            padding: 5
+                        },
+                        border: {
+                            display: true,
+                            color: 'rgba(0, 0, 0, 0.2)'
                         }
                     },
                     y: {
                         title: {
                             display: true,
-                            text: 'Orario'
+                            text: 'Orario',
+                            font: {
+                                weight: 'bold',
+                                size: 12
+                            },
+                            padding: {
+                                bottom: 10
+                            }
                         },
                         grid: {
-                            color: 'rgba(255, 255, 255, 0.1)'
+                            color: 'rgba(0, 0, 0, 0.1)',
+                            lineWidth: 1,
+                            drawBorder: true,
+                            borderDash: [2, 2],
+                            tickLength: 4
                         },
-                        // Impostiamo un range flessibile che si adatta ai dati
                         min: yMin,
                         max: yMax,
                         ticks: {
-                            // Usiamo step di 15 minuti (0.25 ore)
-                            stepSize: 0.25,
+                            stepSize: 0.25, // 15 minuti
                             callback: (value) => {
                                 return this.decimalToTimeFormat(value);
-                            }
+                            },
+                            color: '#555',
+                            font: {
+                                size: 11
+                            },
+                            padding: 5
+                        },
+                        border: {
+                            display: true,
+                            color: 'rgba(0, 0, 0, 0.2)'
                         }
                     }
                 }
@@ -592,7 +634,7 @@ class DatasetVisualizer {
         const errorElement = document.createElement('div');
         errorElement.classList.add('error-message');
         errorElement.style.backgroundColor = 'rgba(220, 53, 69, 0.2)'; 
-        errorElement.style.color = '#fff';
+        errorElement.style.color = '#721c24';
         errorElement.style.padding = '15px';
         errorElement.style.borderRadius = '5px';
         errorElement.style.marginTop = '10px';
