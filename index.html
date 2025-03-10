@@ -3,13 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Il Mio Dataset Visualizzato</title>
+    <title>Visualizzazione Dataset</title>
+    <!-- CSS -->
     <link rel="stylesheet" href="css/style.css">
-    <!-- Chart.js per la visualizzazione del grafico -->
+    <!-- Librerie esterne da CDN -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
-    <!-- Luxon per la gestione delle date -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/luxon/3.4.3/luxon.min.js"></script>
-    <!-- PapaParse per il parsing del CSV -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 </head>
 <body>
@@ -72,22 +70,6 @@
             <div id="quotes-container">
                 <!-- Le citazioni verranno caricate dinamicamente da quotes.js -->
             </div>
-            
-            <!-- Solo per scopi dimostrativi, in produzione potresti usare un CMS o aggiornare manualmente il file quotes.js -->
-            <div class="add-quote-form" style="display: none;">
-                <h3>Aggiungi una nuova citazione</h3>
-                <form id="quote-form">
-                    <div class="form-group">
-                        <label for="quote-text">Citazione:</label>
-                        <textarea id="quote-text" required></textarea>
-                    </div>
-                    <div class="form-group">
-                        <label for="quote-author">Autore:</label>
-                        <input type="text" id="quote-author" required>
-                    </div>
-                    <button type="submit">Aggiungi</button>
-                </form>
-            </div>
         </section>
     </main>
 
@@ -95,11 +77,78 @@
         <p>&copy; <span id="current-year"></span> - Creato con ❤️</p>
     </footer>
 
+    <!-- Script di fallback in caso di problemi con il caricamento dati -->
+    <script>
+        // Verifica che le librerie esterne siano caricate correttamente
+        document.addEventListener('DOMContentLoaded', function() {
+            // Verifica Chart.js
+            if (typeof Chart === 'undefined') {
+                console.error('ERRORE: Chart.js non è stato caricato correttamente');
+                document.querySelector('.chart-container').innerHTML = '<div class="error-message" style="background-color: rgba(220, 53, 69, 0.2); color: #fff; padding: 15px; border-radius: 5px; text-align: center;">Impossibile caricare Chart.js. Verifica la connessione internet.</div>';
+            }
+            
+            // Verifica PapaParse
+            if (typeof Papa === 'undefined') {
+                console.error('ERRORE: PapaParse non è stato caricato correttamente');
+            }
+            
+            // Aggiorna l'anno corrente nel footer
+            document.getElementById('current-year').textContent = new Date().getFullYear();
+            
+            // Test di accesso al file CSV
+            fetch('data/dataset.csv')
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Impossibile accedere al file CSV');
+                    }
+                    console.log('File CSV accessibile');
+                })
+                .catch(error => {
+                    console.warn('Attenzione: ' + error.message);
+                    console.log('Verrà utilizzato il dataset di esempio integrato nel codice.');
+                });
+        });
+        
+        // Dati di esempio in caso di emergenza - questi verranno utilizzati solo se manca lo script chart.js
+        function createFallbackChart() {
+            if (typeof Chart !== 'undefined' && document.getElementById('dataChart') && !window.chartInitialized) {
+                const ctx = document.getElementById('dataChart').getContext('2d');
+                const fallbackData = {
+                    labels: ['02/01', '03/01', '04/01', '05/01', '09/01', '10/01', '12/01', '16/01', '17/01'],
+                    datasets: [{
+                        label: 'Orario',
+                        data: [9.30, 10.15, 9.45, 10.00, 9.25, 9.45, 10.30, 9.15, 9.30],
+                        borderColor: '#0d6efd',
+                        backgroundColor: '#0d6efd',
+                        tension: 0.4
+                    }]
+                };
+                
+                new Chart(ctx, {
+                    type: 'line',
+                    data: fallbackData,
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false
+                    }
+                });
+                
+                console.log('Grafico di fallback creato');
+                window.chartInitialized = true;
+            }
+        }
+        
+        // Tenta di creare un grafico di fallback dopo 3 secondi se non è stato inizializzato
+        setTimeout(function() {
+            if (!window.chartInitialized && document.getElementById('dataChart')) {
+                console.warn('Il grafico non è stato inizializzato, provo a creare un grafico di fallback');
+                createFallbackChart();
+            }
+        }, 3000);
+    </script>
+
+    <!-- Script applicazione -->
     <script src="js/chart.js"></script>
     <script src="js/quotes.js"></script>
-    <script>
-        // Aggiorna l'anno corrente nel footer
-        document.getElementById('current-year').textContent = new Date().getFullYear();
-    </script>
 </body>
 </html>
