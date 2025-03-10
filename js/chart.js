@@ -314,57 +314,6 @@ class DatasetVisualizer {
         return null;
     }
     
-    // Calcola l'intervallo di confidenza al 95% per i dati filtrati
-    calculateConfidenceInterval(data, windowSize = 5) {
-        console.log('Calcolo intervallo di confidenza al 95%...');
-        const upper = [];
-        const lower = [];
-        
-        // Se non ci sono abbastanza dati, restituisci null
-        if (data.length < 3) {
-            console.log('Troppi pochi punti per calcolare l\'intervallo di confidenza');
-            return null;
-        }
-        
-        // Valore t-student per 95% di confidenza 
-        const tValue = data.length < 5 ? 2.78 : 1.96;
-        
-        // Per ogni punto, calcola l'intervallo di confidenza in una finestra mobile
-        for (let i = 0; i < data.length; i++) {
-            // Determina la finestra di punti intorno al punto i
-            const halfWindow = Math.floor(windowSize / 2);
-            const start = Math.max(0, i - halfWindow);
-            const end = Math.min(data.length - 1, i + halfWindow);
-            const windowData = data.slice(start, end + 1);
-            
-            // Calcola la media nella finestra
-            const sum = windowData.reduce((acc, val) => acc + val, 0);
-            const mean = sum / windowData.length;
-            
-            // Calcola la deviazione standard nella finestra
-            const squaredDiffs = windowData.map(val => Math.pow(val - mean, 2));
-            const variance = squaredDiffs.reduce((acc, val) => acc + val, 0) / windowData.length;
-            const stdDev = Math.sqrt(variance);
-            
-            // Calcola l'errore standard
-            const stderr = stdDev / Math.sqrt(windowData.length);
-            
-            // Calcola l'intervallo di confidenza al 95%
-            const marginOfError = tValue * stderr;
-            
-            // Applica l'intervallo centrato sul valore attuale (non sulla media)
-            upper.push(data[i] + marginOfError);
-            lower.push(Math.max(0, data[i] - marginOfError)); // Evita valori negativi se non hanno senso
-            
-            // Log di debug per alcuni punti campione
-            if (i === 0 || i === data.length - 1 || i === Math.floor(data.length/2)) {
-                console.log(`Punto ${i}: valore=${data[i].toFixed(2)}, IC95=[${lower[i].toFixed(2)}-${upper[i].toFixed(2)}]`);
-            }
-        }
-        
-        return { upper, lower };
-    }
-    
     // Aggiorna il filtro dei mesi per mostrare solo i mesi disponibili nei dati
     updateMonthsFilter() {
         if (!this.monthFilter) {
@@ -517,78 +466,39 @@ class DatasetVisualizer {
         console.log(`Punti validi per il grafico: ${dataPoints.length}`);
         console.log(`Colori: ${pointColors.length} (rossi: ${pointColors.filter(c => c === '#dc3545').length})`);
         
-        // Calcola l'intervallo di confidenza al 95%
-        const confidenceInterval = this.calculateConfidenceInterval(allTimes);
-        
-        // Determina il range per l'asse Y basato sui dati filtrati E sui limiti di confidenza
-        let minValue = Math.min(...allTimes);
-        let maxValue = Math.max(...allTimes);
-        
-        // Se abbiamo l'intervallo di confidenza, aggiorna min e max per includere la banda
-        if (confidenceInterval) {
-            minValue = Math.min(minValue, ...confidenceInterval.lower);
-            maxValue = Math.max(maxValue, ...confidenceInterval.upper);
-        }
-        
+        // Determina il range per l'asse Y basato sui dati filtrati
+        const minValue = Math.min(...allTimes);
+        const maxValue = Math.max(...allTimes);
         const range = maxValue - minValue;
         
-        // Aggiungiamo un margine del 5% sopra e sotto
-        const padding = range * 0.05;
+        // Aggiungiamo un margine del 10% sopra e sotto
+        const padding = range * 0.1;
         const yMin = Math.max(0, minValue - padding);
         const yMax = maxValue + padding;
         
-        console.log(`Range asse Y (con banda): min=${minValue.toFixed(2)}, max=${maxValue.toFixed(2)}, range=${range.toFixed(2)}`);
+        console.log(`Range asse Y: min=${minValue.toFixed(2)}, max=${maxValue.toFixed(2)}, range=${range.toFixed(2)}`);
         console.log(`Scala asse Y con padding: ${yMin.toFixed(2)} - ${yMax.toFixed(2)}`);
-        
-        // Crea i dataset
-        const datasets = [
-            {
-                label: 'Orario',
-                data: dataPoints,
-                borderColor: '#0d6efd',
-                tension: 0.4,
-                borderWidth: 2,
-                fill: false,
-                pointBackgroundColor: pointColors,
-                pointBorderColor: pointColors,
-                pointRadius: 5,
-                pointHoverRadius: 7,
-                spanGaps: true
-            }
-        ];
-        
-        // Aggiungi i dataset dell'intervallo di confidenza se disponibili
-        if (confidenceInterval) {
-            datasets.push(
-                {
-                    label: 'Limite superiore IC 95%',
-                    data: confidenceInterval.upper,
-                    borderColor: 'rgba(13, 110, 253, 0.3)',
-                    backgroundColor: 'rgba(13, 110, 253, 0)',
-                    borderWidth: 1,
-                    borderDash: [5, 5],
-                    pointRadius: 0,
-                    fill: false
-                },
-                {
-                    label: 'Limite inferiore IC 95%',
-                    data: confidenceInterval.lower,
-                    borderColor: 'rgba(13, 110, 253, 0.3)',
-                    backgroundColor: 'rgba(13, 110, 253, 0.2)',
-                    borderWidth: 1,
-                    borderDash: [5, 5],
-                    pointRadius: 0,
-                    fill: 1 // Riempi tra questo dataset e quello sopra
-                }
-            );
-        }
         
         // Configurazione del grafico
         this.chart = new Chart(ctx, {
             type: 'line',
             data: {
                 labels: labels,
-                datasets: datasets
+                datasets: [
+                    {
+                        label: 'Orario',
+                        data: dataPoints,
+                        borderColor: '#0d6efd',
+                        tension: 0.4,
+                        borderWidth: 2,
+                        fill: false,
+                        pointBackgroundColor: pointColors,
+                        pointBorderColor: pointColors,
+                        pointRadius: 5,
+                        pointHoverRadius: 7,
+                        spanGaps: true
+                    }
+                ]
             },
             options: {
                 responsive: true,
@@ -600,7 +510,7 @@ class DatasetVisualizer {
                 plugins: {
                     title: {
                         display: true,
-                        text: 'Dati giornalieri con intervallo di confidenza 95%',
+                        text: 'Dati giornalieri',
                         font: {
                             size: 16,
                             weight: 'bold'
@@ -617,10 +527,6 @@ class DatasetVisualizer {
                                     const isOriginal = filteredData[index].isOriginal;
                                     const tipo = isOriginal ? "originale" : "stimato";
                                     return `Orario (${tipo}): ${this.decimalToTimeFormat(context.raw)}`;
-                                } else if (context.datasetIndex === 1) {
-                                    return `Limite superiore IC 95%: ${this.decimalToTimeFormat(context.raw)}`;
-                                } else if (context.datasetIndex === 2) {
-                                    return `Limite inferiore IC 95%: ${this.decimalToTimeFormat(context.raw)}`;
                                 }
                                 return '';
                             }
