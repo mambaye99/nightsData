@@ -517,21 +517,28 @@ class DatasetVisualizer {
         console.log(`Punti validi per il grafico: ${dataPoints.length}`);
         console.log(`Colori: ${pointColors.length} (rossi: ${pointColors.filter(c => c === '#dc3545').length})`);
         
-        // Determina il range per l'asse Y basato sui dati filtrati
-        const minValue = Math.min(...allTimes);
-        const maxValue = Math.max(...allTimes);
+        // Calcola l'intervallo di confidenza al 95%
+        const confidenceInterval = this.calculateConfidenceInterval(allTimes);
+        
+        // Determina il range per l'asse Y basato sui dati filtrati E sui limiti di confidenza
+        let minValue = Math.min(...allTimes);
+        let maxValue = Math.max(...allTimes);
+        
+        // Se abbiamo l'intervallo di confidenza, aggiorna min e max per includere la banda
+        if (confidenceInterval) {
+            minValue = Math.min(minValue, ...confidenceInterval.lower);
+            maxValue = Math.max(maxValue, ...confidenceInterval.upper);
+        }
+        
         const range = maxValue - minValue;
         
-        // Aggiungiamo un margine del 10% sopra e sotto
-        const padding = range * 0.1;
+        // Aggiungiamo un margine del 5% sopra e sotto
+        const padding = range * 0.05;
         const yMin = Math.max(0, minValue - padding);
         const yMax = maxValue + padding;
         
-        console.log(`Range asse Y: min=${minValue.toFixed(2)}, max=${maxValue.toFixed(2)}, range=${range.toFixed(2)}`);
+        console.log(`Range asse Y (con banda): min=${minValue.toFixed(2)}, max=${maxValue.toFixed(2)}, range=${range.toFixed(2)}`);
         console.log(`Scala asse Y con padding: ${yMin.toFixed(2)} - ${yMax.toFixed(2)}`);
-        
-        // Calcola l'intervallo di confidenza al 95%
-        const confidenceInterval = this.calculateConfidenceInterval(allTimes);
         
         // Crea i dataset
         const datasets = [
