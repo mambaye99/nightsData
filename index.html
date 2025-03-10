@@ -1,1 +1,105 @@
-<h1>Hello Nights</h1>
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Il Mio Dataset Visualizzato</title>
+    <link rel="stylesheet" href="css/style.css">
+    <!-- Chart.js per la visualizzazione del grafico -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <!-- Luxon per la gestione delle date -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/luxon/3.4.3/luxon.min.js"></script>
+    <!-- PapaParse per il parsing del CSV -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+</head>
+<body>
+    <div class="background-container">
+        <!-- La classe overlay permette di scurire l'immagine di sfondo per migliorare la leggibilità -->
+        <div class="overlay"></div>
+    </div>
+
+    <header>
+        <div class="quote-container">
+            <blockquote>
+                <p id="main-quote">"La curiosità è la cosa più preziosa che abbiamo."</p>
+                <cite id="main-author">— Albert Einstein</cite>
+            </blockquote>
+        </div>
+    </header>
+
+    <main>
+        <section class="chart-section">
+            <h2>Visualizzazione Dataset</h2>
+            
+            <div class="filter-controls">
+                <label for="month-filter">Filtra per mese:</label>
+                <select id="month-filter">
+                    <option value="all">Tutti i mesi</option>
+                    <option value="0">Gennaio</option>
+                    <option value="1">Febbraio</option>
+                    <option value="2">Marzo</option>
+                    <option value="3">Aprile</option>
+                    <option value="4">Maggio</option>
+                    <option value="5">Giugno</option>
+                    <option value="6">Luglio</option>
+                    <option value="7">Agosto</option>
+                    <option value="8">Settembre</option>
+                    <option value="9">Ottobre</option>
+                    <option value="10">Novembre</option>
+                    <option value="11">Dicembre</option>
+                </select>
+            </div>
+            
+            <div class="chart-container">
+                <canvas id="dataChart"></canvas>
+            </div>
+            
+            <div class="legend">
+                <div class="legend-item">
+                    <span class="dot original"></span> Dati originali
+                </div>
+                <div class="legend-item">
+                    <span class="dot estimated"></span> Dati stimati
+                </div>
+                <div class="legend-item">
+                    <span class="area std-dev"></span> Deviazione standard
+                </div>
+            </div>
+        </section>
+
+        <section class="quotes-section">
+            <h2>Citazioni</h2>
+            <div id="quotes-container">
+                <!-- Le citazioni verranno caricate dinamicamente da quotes.js -->
+            </div>
+            
+            <!-- Solo per scopi dimostrativi, in produzione potresti usare un CMS o aggiornare manualmente il file quotes.js -->
+            <div class="add-quote-form" style="display: none;">
+                <h3>Aggiungi una nuova citazione</h3>
+                <form id="quote-form">
+                    <div class="form-group">
+                        <label for="quote-text">Citazione:</label>
+                        <textarea id="quote-text" required></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="quote-author">Autore:</label>
+                        <input type="text" id="quote-author" required>
+                    </div>
+                    <button type="submit">Aggiungi</button>
+                </form>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <p>&copy; <span id="current-year"></span> - Creato con ❤️</p>
+    </footer>
+
+    <script src="js/chart.js"></script>
+    <script src="js/quotes.js"></script>
+    <script>
+        // Aggiorna l'anno corrente nel footer
+        document.getElementById('current-year').textContent = new Date().getFullYear();
+    </script>
+</body>
+</html>
