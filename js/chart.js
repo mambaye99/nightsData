@@ -460,6 +460,14 @@ class DatasetVisualizer {
     handleMonthFilter(event) {
         console.log('Cambio filtro mese:', event.target.value);
         this.currentMonth = event.target.value;
+        
+        // Assicuriamoci che il valore sia valido
+        if (this.currentMonth !== 'all' && !this.currentMonth.includes('-')) {
+            console.error('Formato mese non valido:', this.currentMonth);
+            this.currentMonth = 'all'; // Fallback a tutti i mesi
+        }
+        
+        // Aggiorna il grafico con il nuovo filtro
         this.updateChart();
     }
     
@@ -520,5 +528,6 @@ class DatasetVisualizer {
 
 // Inizializza la visualizzazione quando il DOM è caricato
 document.addEventListener('DOMContentLoaded', () => {
-    new DatasetVisualizer();
+    // Crea un'istanza globale per riferimento e debug
+    window.datasetVisualizer = new DatasetVisualizer();
 });

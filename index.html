@@ -31,9 +31,9 @@
             
             <div class="filter-controls">
                 <label for="month-filter">Filtra per mese:</label>
-                <select id="month-filter">
+                <select id="month-filter" onchange="if(window.datasetVisualizer){window.datasetVisualizer.handleMonthFilter({target:this});}else{console.log('Visualizzatore non inizializzato');}">
                     <option value="all">Tutti i mesi</option>
-                    <!-- Altri mesi verranno aggiunti dinamicamente in base al dataset -->
+                    <!-- I mesi verranno aggiunti dinamicamente -->
                 </select>
             </div>
             
