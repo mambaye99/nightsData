@@ -198,11 +198,23 @@ class DatasetVisualizer {
     estimateMissingValues(data) {
         if (data.length === 0) return [];
         
-        const processedData = [...data];
+        console.log('Inizio stima valori mancanti...');
+        
+        // Crea una copia per risultati
+        const result = [];
+        
+        // Mappa per lookup veloce dei dati esistenti
+        const existingDataMap = new Map();
+        data.forEach(item => {
+            const dateStr = item.date.toISOString().split('T')[0];
+            existingDataMap.set(dateStr, item);
+        });
+        
+        // Trova tutte le date nel range, incluse quelle già presenti
         const firstDate = new Date(data[0].date);
         const lastDate = new Date(data[data.length - 1].date);
-        
         const allDates = [];
+        
         const currentDate = new Date(firstDate);
         
         // Genera tutte le date nel range (esclusi i weekend)
@@ -218,31 +230,34 @@ class DatasetVisualizer {
             currentDate.setDate(currentDate.getDate() + 1);
         }
         
-        // Mappa per accesso rapido ai dati originali per data
-        const dateMap = new Map();
-        processedData.forEach(item => {
-            dateMap.set(item.date.toISOString().split('T')[0], item);
-        });
+        console.log(`Trovate ${allDates.length} date nel range (senza weekend)`);
         
-        // Trova e stima i valori mancanti
-        const result = [];
-        
+        // Per ogni data nel range
         for (const date of allDates) {
-            const dateKey = date.toISOString().split('T')[0];
+            const dateStr = date.toISOString().split('T')[0];
             
-            if (dateMap.has(dateKey)) {
-                // Usa il valore originale
-                result.push(dateMap.get(dateKey));
+            if (existingDataMap.has(dateStr)) {
+                // Usa il dato esistente
+                result.push(existingDataMap.get(dateStr));
+                console.log(`Data ${dateStr}: valore originale ${existingDataMap.get(dateStr).time}`);
             } else {
-                // Stima il valore mancante
-                const estimatedValue = this.estimateValue(date, processedData);
-                result.push({
-                    date: new Date(date),
-                    time: estimatedValue,
-                    isOriginal: false
-                });
+                // Cerca di stimare
+                const estimatedValue = this.estimateValue(date, data);
+                console.log(`Data ${dateStr}: valore stimato ${estimatedValue}`);
+                
+                if (estimatedValue !== null) {
+                    result.push({
+                        date: new Date(date),
+                        time: estimatedValue,
+                        isOriginal: false
+                    });
+                }
             }
         }
+        
+        // Ordina i risultati per data
+        result.sort((a, b) => a.date - b.date);
+        console.log(`Risultato finale: ${result.length} valori (originali + stimati)`);
         
         return result;
     }
@@ -253,28 +268,43 @@ class DatasetVisualizer {
         let prevValue = null;
         let nextValue = null;
         
+        let prevItem = null;
+        let nextItem = null;
+        
         let minPrevDiff = Infinity;
         let minNextDiff = Infinity;
         
+        // Cerca il valore precedente e successivo più vicino
         for (const item of data) {
-            const diff = date - item.date;
+            if (item.time === null) continue; // Salta valori nulli
+            
+            const diff = date.getTime() - item.date.getTime();
             
             if (diff > 0 && diff < minPrevDiff) {
                 minPrevDiff = diff;
                 prevValue = item.time;
+                prevItem = item;
             } else if (diff < 0 && Math.abs(diff) < minNextDiff) {
                 minNextDiff = Math.abs(diff);
                 nextValue = item.time;
+                nextItem = item;
             }
         }
         
-        // Se abbiamo entrambi i valori, calcoliamo la media
+        console.log(`Stima per ${date.toISOString().split('T')[0]}: prev=${prevValue}, next=${nextValue}`);
+        
+        // Se abbiamo entrambi i valori, calcoliamo una media ponderata in base alla distanza
         if (prevValue !== null && nextValue !== null) {
-            return (prevValue + nextValue) / 2;
+            // Calcolo di interpolazione lineare
+            const totalDiff = minPrevDiff + minNextDiff;
+            const weightPrev = minNextDiff / totalDiff;
+            const weightNext = minPrevDiff / totalDiff;
+            const estimatedValue = (prevValue * weightPrev) + (nextValue * weightNext);
+            return estimatedValue;
         }
         
-        // Altrimenti usiamo il valore disponibile o un valore di default
-        return prevValue !== null ? prevValue : (nextValue !== null ? nextValue : 0);
+        // Altrimenti usiamo il valore disponibile
+        return prevValue !== null ? prevValue : nextValue;
     }
     
     // Calcola la deviazione standard
@@ -288,28 +318,51 @@ class DatasetVisualizer {
     
     // Calcola le bande di deviazione standard mobile
     calculateRollingStdDev(data, windowSize) {
+        console.log('Calcolo bande deviazione standard dinamiche...');
         const upper = [];
         const lower = [];
         
+        // Se non ci sono abbastanza dati, usa una deviazione statica
+        if (data.length < 3) {
+            console.log('Troppi pochi punti per una deviazione dinamica, uso statica');
+            const mean = data.reduce((sum, val) => sum + val, 0) / data.length;
+            const squaredDiffs = data.map(val => Math.pow(val - mean, 2));
+            const variance = squaredDiffs.reduce((sum, diff) => sum + diff, 0) / data.length;
+            const stdDev = Math.sqrt(variance);
+            
+            // Applica la deviazione standard a ogni punto
+            for (const value of data) {
+                upper.push(value + stdDev);
+                lower.push(value - stdDev);
+            }
+            
+            return { upper, lower };
+        }
+        
+        // Per ogni punto, calcola la deviazione standard in una finestra mobile
         for (let i = 0; i < data.length; i++) {
-            // Definisci la finestra di dati centrata nel punto i
+            // Determina la finestra di punti intorno al punto i
             const halfWindow = Math.floor(windowSize / 2);
             const start = Math.max(0, i - halfWindow);
             const end = Math.min(data.length - 1, i + halfWindow);
             const windowData = data.slice(start, end + 1);
             
-            // Calcola media nella finestra
+            // Calcola la media nella finestra
             const sum = windowData.reduce((acc, val) => acc + val, 0);
             const mean = sum / windowData.length;
             
-            // Calcola deviazione standard nella finestra
+            // Calcola la deviazione standard nella finestra
             const squaredDiffs = windowData.map(val => Math.pow(val - mean, 2));
             const variance = squaredDiffs.reduce((acc, val) => acc + val, 0) / windowData.length;
             const stdDev = Math.sqrt(variance);
             
-            // Applica la deviazione standard al punto attuale (non alla media)
+            // Applica la deviazione standard centrata sul valore attuale (non sulla media globale)
             upper.push(data[i] + stdDev);
-            lower.push(data[i] - stdDev);
+            lower.push(Math.max(0, data[i] - stdDev)); // Evita valori negativi se non hanno senso
+            
+            if (i === 0 || i === data.length - 1 || i === Math.floor(data.length/2)) {
+                console.log(`Punto ${i}: valore=${data[i].toFixed(2)}, stdDev=${stdDev.toFixed(2)}, banda=[${lower[i].toFixed(2)}-${upper[i].toFixed(2)}]`);
+            }
         }
         
         return { upper, lower };
@@ -322,23 +375,50 @@ class DatasetVisualizer {
         
         // Prepara i dati filtrati
         const filteredData = this.getFilteredData();
+        console.log(`Dati filtrati: ${filteredData.length} punti`);
+        
+        if (filteredData.length === 0) {
+            this.showError('Nessun dato disponibile per il periodo selezionato');
+            return;
+        }
         
         // Prepara i dataset per Chart.js
         const dataPoints = [];  // Per tutti i punti (originali e stimati)
         const pointColors = []; // Colore per ogni punto
+        const pointRadiuses = []; // Dimensione per ogni punto
         const labels = [];
         
         // Raccogliamo tutti i valori per il calcolo statistico
-        const allTimes = filteredData.map(item => item.time);
+        const allTimes = [];
         
         filteredData.forEach(item => {
             const formattedDate = this.formatDate(item.date);
             labels.push(formattedDate);
+            
+            // Se il tempo è null, lo sostituiamo con un valore stimato
+            if (item.time === null) {
+                console.warn(`Trovato valore null per ${formattedDate}, dovrebbe essere già stato stimato`);
+                return; // Salta questo punto
+            }
+            
             dataPoints.push(item.time);
+            allTimes.push(item.time);
             
             // Colore rosso per i punti stimati, blu per gli originali
             pointColors.push(item.isOriginal ? '#0d6efd' : '#dc3545');
+            
+            // Dimensione maggiore per i punti originali
+            pointRadiuses.push(item.isOriginal ? 5 : 5);
         });
+        
+        console.log(`Punti validi per il grafico: ${dataPoints.length}`);
+        
+        // Determina il range per l'asse Y basato sui dati filtrati
+        const minValue = Math.min(...allTimes);
+        const maxValue = Math.max(...allTimes);
+        const valuePadding = (maxValue - minValue) * 0.1; // 10% di padding
+        
+        console.log(`Range asse Y: ${minValue.toFixed(2)} - ${maxValue.toFixed(2)} (con padding: ${(minValue-valuePadding).toFixed(2)} - ${(maxValue+valuePadding).toFixed(2)})`);
         
         // Calcola le bande di deviazione standard dinamica per ogni punto
         const stdDevBands = this.calculateRollingStdDev(allTimes, 5); // Finestra di 5 punti
@@ -358,10 +438,7 @@ class DatasetVisualizer {
                         fill: false,
                         pointBackgroundColor: pointColors,
                         pointBorderColor: pointColors,
-                        pointRadius: function(context) {
-                            const index = context.dataIndex;
-                            return filteredData[index].isOriginal ? 5 : 5;
-                        },
+                        pointRadius: pointRadiuses,
                         pointHoverRadius: 7,
                         spanGaps: true // Importante: collega i punti anche con valori mancanti
                     },
@@ -442,7 +519,10 @@ class DatasetVisualizer {
                         },
                         grid: {
                             color: 'rgba(255, 255, 255, 0.1)'
-                        }
+                        },
+                        // Imposta i limiti dell'asse Y in base ai dati correnti
+                        suggestedMin: minValue - valuePadding,
+                        suggestedMax: maxValue + valuePadding
                     }
                 }
             }
