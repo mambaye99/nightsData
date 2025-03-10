@@ -322,3 +322,80 @@ footer {
         align-items: flex-start;
     }
 }
+
+/* Aggiungi queste regole alla fine del tuo file CSS */
+
+/* Miglioramenti per dispositivi mobili */
+@media (max-width: 768px) {
+    /* Sezione grafico con meno padding */
+    section.chart-section {
+        padding: 1rem;
+    }
+    
+    /* Container del grafico più alto su mobile */
+    .chart-container {
+        height: 350px; /* Aumenta l'altezza */
+        margin: 0;
+        padding: 0.5rem;
+    }
+    
+    /* Rotazione più accentuata delle etichette X per evitare sovrapposizioni */
+    .filter-controls {
+        padding: 0.8rem;
+        gap: 0.5rem;
+    }
+    
+    /* Filtro a tutta larghezza */
+    .filter-controls select {
+        width: 100%;
+        padding: 0.8rem;
+        font-size: 1rem; /* Font più grande per facilitare il tocco */
+    }
+    
+    /* Legenda semplificata */
+    .legend {
+        padding: 0.8rem;
+        justify-content: center;
+    }
+    
+    .legend-item {
+        padding: 0.5rem;
+        margin: 0.25rem;
+    }
+}
+
+/* Per schermi molto piccoli (telefoni in verticale) */
+@media (max-width: 480px) {
+    /* Riduce ulteriormente i margini per massimizzare lo spazio */
+    section.chart-section {
+        margin-bottom: 1rem;
+    }
+    
+    /* Aumenta ulteriormente l'altezza del grafico */
+    .chart-container {
+        height: 300px;
+    }
+    
+    /* Indicatore per la rotazione dello schermo - opzionale */
+    .chart-section::after {
+        content: "Ruota il dispositivo per una visualizzazione migliore";
+        display: block;
+        text-align: center;
+        font-size: 0.8rem;
+        color: #666;
+        padding: 0.5rem 0;
+        font-style: italic;
+    }
+}
+
+/* Regole per telefoni in modalità orizzontale */
+@media (max-height: 500px) and (orientation: landscape) {
+    .chart-container {
+        height: 240px; /* Più basso ma più largo in orizzontale */
+    }
+    
+    /* Nascondi il suggerimento di rotazione quando già in orizzontale */
+    .chart-section::after {
+        display: none;
+    }
+}

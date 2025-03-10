@@ -29,6 +29,12 @@ class DatasetVisualizer {
         // Inizializzazione
         this.loadData();
     }
+
+    // Rileva se il dispositivo è mobile
+    isMobileDevice() {
+        return window.innerWidth <= 768 || 
+               /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    }
     
     // Carica il dataset o usa dati di esempio
     async loadData() {
@@ -471,13 +477,17 @@ class DatasetVisualizer {
         const maxValue = Math.max(...allTimes);
         const range = maxValue - minValue;
         
-        // Aggiungiamo un margine del 10% sopra e sotto
+        // Aggiungiamo un margine per l'asse Y
         const padding = range * 0.1;
         const yMin = Math.max(0, minValue - padding);
         const yMax = maxValue + padding;
         
         console.log(`Range asse Y: min=${minValue.toFixed(2)}, max=${maxValue.toFixed(2)}, range=${range.toFixed(2)}`);
         console.log(`Scala asse Y con padding: ${yMin.toFixed(2)} - ${yMax.toFixed(2)}`);
+        
+        // Verifica se siamo su mobile
+        const isMobile = this.isMobileDevice();
+        console.log(`Dispositivo mobile: ${isMobile}`);
         
         // Configurazione del grafico
         this.chart = new Chart(ctx, {
@@ -494,7 +504,7 @@ class DatasetVisualizer {
                         fill: false,
                         pointBackgroundColor: pointColors,
                         pointBorderColor: pointColors,
-                        pointRadius: 5,
+                        pointRadius: isMobile ? 4 : 5, // Punti leggermente più piccoli su mobile
                         pointHoverRadius: 7,
                         spanGaps: true
                     }
@@ -512,12 +522,12 @@ class DatasetVisualizer {
                         display: true,
                         text: 'Dati giornalieri',
                         font: {
-                            size: 16,
+                            size: isMobile ? 14 : 16, // Font più piccolo su mobile
                             weight: 'bold'
                         },
                         padding: {
-                            top: 10,
-                            bottom: 15
+                            top: isMobile ? 5 : 10,
+                            bottom: isMobile ? 10 : 15
                         }
                     },
                     tooltip: {
@@ -537,10 +547,18 @@ class DatasetVisualizer {
                         },
                         backgroundColor: 'rgba(0, 0, 0, 0.75)',
                         titleFont: {
+                            size: isMobile ? 13 : 14,
                             weight: 'bold'
                         },
-                        padding: 10,
-                        cornerRadius: 4
+                        bodyFont: {
+                            size: isMobile ? 12 : 13
+                        },
+                        padding: isMobile ? 8 : 10,
+                        cornerRadius: 4,
+                        displayColors: true,
+                        usePointStyle: true,
+                        // Su mobile, posiziona il tooltip in alto per evitare che venga coperto dal dito
+                        position: isMobile ? 'nearest' : 'average'
                     },
                     legend: {
                         display: false
@@ -553,17 +571,20 @@ class DatasetVisualizer {
                             lineWidth: 1,
                             drawTicks: true,
                             drawBorder: true,
-                            borderDash: [2, 2],
+                            borderDash: isMobile ? [2, 2] : undefined,
                             tickLength: 4
                         },
                         ticks: {
-                            maxRotation: 45,
-                            minRotation: 45,
+                            maxRotation: isMobile ? 90 : 45, // Rotazione verticale su mobile
+                            minRotation: isMobile ? 90 : 45,
                             color: '#555',
                             font: {
-                                size: 11
+                                size: isMobile ? 9 : 11 // Font più piccolo su mobile
                             },
-                            padding: 5
+                            padding: isMobile ? 2 : 5, // Meno padding su mobile
+                            // Mostra meno etichette su schermi piccoli
+                            autoSkip: true,
+                            maxTicksLimit: isMobile ? 8 : 15
                         },
                         border: {
                             display: true,
@@ -576,17 +597,17 @@ class DatasetVisualizer {
                             text: 'Orario',
                             font: {
                                 weight: 'bold',
-                                size: 12
+                                size: isMobile ? 11 : 12
                             },
                             padding: {
-                                bottom: 10
+                                bottom: isMobile ? 5 : 10
                             }
                         },
                         grid: {
                             color: 'rgba(0, 0, 0, 0.1)',
                             lineWidth: 1,
                             drawBorder: true,
-                            borderDash: [2, 2],
+                            borderDash: isMobile ? [2, 2] : undefined,
                             tickLength: 4
                         },
                         min: yMin,
@@ -598,9 +619,12 @@ class DatasetVisualizer {
                             },
                             color: '#555',
                             font: {
-                                size: 11
+                                size: isMobile ? 9 : 11 // Font più piccolo su mobile
                             },
-                            padding: 5
+                            padding: isMobile ? 3 : 5,
+                            // Mostra meno ticks su mobile
+                            autoSkip: isMobile,
+                            maxTicksLimit: isMobile ? 10 : 20
                         },
                         border: {
                             display: true,
@@ -649,4 +673,16 @@ class DatasetVisualizer {
 document.addEventListener('DOMContentLoaded', () => {
     // Crea un'istanza globale per riferimento e debug
     window.datasetVisualizer = new DatasetVisualizer();
+    
+    // Aggiunge gestione orientamento per dispositivi mobili
+    if ('orientation' in window) {
+        window.addEventListener('orientationchange', () => {
+            // Attendiamo che l'orientamento cambi completamente
+            setTimeout(() => {
+                if (window.datasetVisualizer && window.datasetVisualizer.chart) {
+                    window.datasetVisualizer.updateChart();
+                }
+            }, 200);
+        });
+    }
 });

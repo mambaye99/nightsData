@@ -2,13 +2,136 @@
 <html lang="it">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Visualizzazione Dataset</title>
     <!-- CSS -->
     <link rel="stylesheet" href="css/style.css">
     <!-- Librerie esterne da CDN -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+    <!-- CSS aggiuntivo per mobile -->
+    <style>
+        /* Miglioramenti specifici per mobile */
+        @media (max-width: 480px) {
+            /* Riduci dimensione testo in header */
+            blockquote {
+                font-size: 1rem !important;
+            }
+            
+            /* Aumenta dimensione del filtro per facilità di tocco */
+            .filter-controls select {
+                height: 44px;
+                font-size: 16px; /* Evita lo zoom automatico su iOS */
+                padding: 8px 12px;
+            }
+            
+            /* Migliora la spaziatura nel grafico */
+            .chart-container {
+                margin: 0;
+                padding: 0.5rem;
+            }
+            
+            /* Ottimizza la sezione citazioni */
+            .quotes-section .quote-card {
+                padding: 1rem;
+                margin-bottom: 1rem;
+            }
+            
+            /* Aggiunge supporto per gesture touch */
+            .chart-section {
+                touch-action: pan-y; /* Permette lo scroll verticale ma non lo zoom */
+            }
+            
+            /* Bottoni più grandi e spaziati */
+            button {
+                padding: 12px 20px;
+                min-height: 44px; /* Dimensione minima per target touch */
+                min-width: 44px;
+            }
+            
+            /* Migliora visualizzazione footer */
+            footer {
+                padding: 1rem;
+                margin-top: 1rem;
+            }
+        }
+        
+        /* Supporto per schermi molto piccoli */
+        @media (max-width: 360px) {
+            /* Riduzione ulteriore padding/margin */
+            section {
+                padding: 0.8rem;
+            }
+            
+            .profile-image img {
+                width: 80px;
+                height: 80px;
+            }
+            
+            h2 {
+                font-size: 1.1rem;
+            }
+        }
+        
+        /* Orientamento orizzontale su mobile */
+        @media (max-height: 500px) and (orientation: landscape) {
+            header {
+                padding: 0.5rem;
+            }
+            
+            .header-container {
+                flex-direction: row !important;
+            }
+            
+            .profile-image {
+                margin-right: 1rem;
+            }
+            
+            .chart-container {
+                height: 200px !important;
+            }
+            
+            .quotes-section {
+                margin-top: 0.5rem;
+            }
+        }
+        
+        /* Fix per problemi comuni su mobile */
+        * {
+            -webkit-tap-highlight-color: transparent;
+        }
+        
+        input, select, textarea, button {
+            -webkit-appearance: none;
+            border-radius: 0;
+            font-size: 16px; /* Evita zoom su input in iOS */
+        }
+        
+        /* Aggiungi animazione di caricamento */
+        .loading-spinner {
+            display: inline-block;
+            width: 40px;
+            height: 40px;
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            border-radius: 50%;
+            border-top-color: #0d6efd;
+            animation: spin 1s ease-in-out infinite;
+            margin: 2rem auto;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        /* Stato di caricamento */
+        .chart-loading {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 200px;
+        }
+    </style>
 </head>
 <body>
     <div class="background-container">
@@ -42,6 +165,11 @@
             </div>
             
             <div class="chart-container">
+                <!-- Indicatore di caricamento -->
+                <div id="chart-loading" class="chart-loading">
+                    <div class="loading-spinner"></div>
+                    <p>Caricamento dati...</p>
+                </div>
                 <canvas id="dataChart"></canvas>
             </div>
             
@@ -67,10 +195,42 @@
         <p>&copy; <span id="current-year"></span> - Creato con ❤️</p>
     </footer>
 
-    <!-- Script di verifica -->
+    <!-- Script di verifica e miglioramenti mobile -->
     <script>
         // Verifica che le librerie esterne siano caricate correttamente
         document.addEventListener('DOMContentLoaded', function() {
+            // Nascondi l'indicatore di caricamento quando il grafico è pronto
+            const chartLoading = document.getElementById('chart-loading');
+            const chartCanvas = document.getElementById('dataChart');
+            
+            if (chartLoading && chartCanvas) {
+                // Nascondi inizialmente il canvas
+                chartCanvas.style.display = 'none';
+                
+                // Configura un observer per attendere che il grafico sia pronto
+                const observer = new MutationObserver(function(mutations) {
+                    if (window.mainChart || (window.datasetVisualizer && window.datasetVisualizer.chart)) {
+                        // Il grafico è pronto, nascondi il loader e mostra il canvas
+                        chartLoading.style.display = 'none';
+                        chartCanvas.style.display = 'block';
+                        observer.disconnect();
+                    }
+                });
+                
+                // Osserva cambiamenti nel DOM
+                observer.observe(document.body, { 
+                    childList: true, 
+                    subtree: true 
+                });
+                
+                // Timeout di sicurezza (5 secondi)
+                setTimeout(function() {
+                    chartLoading.style.display = 'none';
+                    chartCanvas.style.display = 'block';
+                    observer.disconnect();
+                }, 5000);
+            }
+            
             // Aggiorna l'anno corrente nel footer
             document.getElementById('current-year').textContent = new Date().getFullYear();
             
@@ -83,7 +243,55 @@
             if (typeof Papa === 'undefined') {
                 console.error('ERRORE: PapaParse non è stato caricato correttamente');
             }
+            
+            // Migliora interazione su mobile
+            enhanceMobileExperience();
         });
+        
+        // Funzione per migliorare l'esperienza mobile
+        function enhanceMobileExperience() {
+            // Rileva se è un dispositivo mobile
+            const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth <= 768;
+            
+            if (isMobile) {
+                console.log('Dispositivo mobile rilevato, applicazione ottimizzazioni...');
+                
+                // Migliora interazione touch su select
+                const selects = document.querySelectorAll('select');
+                selects.forEach(select => {
+                    select.addEventListener('touchstart', function(e) {
+                        // Previeni il doppio tap su iOS
+                        e.preventDefault();
+                        this.focus();
+                    });
+                });
+                
+                // Gestione orientamento
+                window.addEventListener('orientationchange', function() {
+                    // Aggiorna il layout dopo il cambio di orientamento
+                    setTimeout(function() {
+                        if (window.datasetVisualizer && window.datasetVisualizer.chart) {
+                            window.datasetVisualizer.updateChart();
+                        }
+                    }, 300);
+                });
+                
+                // Migliora lo scrolling su iOS
+                document.documentElement.style.webkitOverflowScrolling = 'touch';
+                
+                // Correggi il problema del 100vh su iOS
+                const setVh = () => {
+                    const vh = window.innerHeight * 0.01;
+                    document.documentElement.style.setProperty('--vh', `${vh}px`);
+                };
+                
+                // Imposta inizialmente
+                setVh();
+                
+                // Aggiorna al ridimensionamento
+                window.addEventListener('resize', setVh);
+            }
+        }
     </script>
 
     <!-- Script applicazione -->
