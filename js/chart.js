@@ -202,22 +202,26 @@ class DatasetVisualizer {
         
         // Crea una copia per risultati
         const result = [];
+        const originalData = [...data]; // Manteniamo una copia dei dati originali con i valori nulli
         
-        // Mappa per lookup veloce dei dati esistenti
-        const existingDataMap = new Map();
-        data.forEach(item => {
-            const dateStr = item.date.toISOString().split('T')[0];
-            existingDataMap.set(dateStr, item);
-        });
+        // Rimuovi i valori nulli temporaneamente per calcolare le stime
+        const validData = data.filter(item => item.time !== null);
+        
+        if (validData.length === 0) {
+            console.warn('Nessun dato valido per fare stime!');
+            return [];
+        }
         
         // Trova tutte le date nel range, incluse quelle già presenti
-        const firstDate = new Date(data[0].date);
-        const lastDate = new Date(data[data.length - 1].date);
-        const allDates = [];
+        const firstDate = new Date(Math.min(...data.map(item => item.date.getTime())));
+        const lastDate = new Date(Math.max(...data.map(item => item.date.getTime())));
         
+        console.log(`Range date: ${firstDate.toISOString().split('T')[0]} - ${lastDate.toISOString().split('T')[0]}`);
+        
+        // Genera un array con tutte le date lavorative nel range
+        const allDates = [];
         const currentDate = new Date(firstDate);
         
-        // Genera tutte le date nel range (esclusi i weekend)
         while (currentDate <= lastDate) {
             const dayOfWeek = currentDate.getDay();
             
@@ -230,81 +234,130 @@ class DatasetVisualizer {
             currentDate.setDate(currentDate.getDate() + 1);
         }
         
-        console.log(`Trovate ${allDates.length} date nel range (senza weekend)`);
+        console.log(`Trovate ${allDates.length} date lavorative nel range`);
         
-        // Per ogni data nel range
+        // Crea un dizionario con i dati originali indicizzati per data
+        const dataByDate = new Map();
+        originalData.forEach(item => {
+            const dateStr = item.date.toISOString().split('T')[0];
+            dataByDate.set(dateStr, item);
+        });
+        
+        // Per ogni data lavorativa
         for (const date of allDates) {
             const dateStr = date.toISOString().split('T')[0];
             
-            if (existingDataMap.has(dateStr)) {
-                // Usa il dato esistente
-                result.push(existingDataMap.get(dateStr));
-                console.log(`Data ${dateStr}: valore originale ${existingDataMap.get(dateStr).time}`);
-            } else {
-                // Cerca di stimare
-                const estimatedValue = this.estimateValue(date, data);
-                console.log(`Data ${dateStr}: valore stimato ${estimatedValue}`);
+            // Verifica se abbiamo un dato originale per questa data
+            if (dataByDate.has(dateStr)) {
+                const item = dataByDate.get(dateStr);
                 
-                if (estimatedValue !== null) {
+                // Se il valore è null, stimalo
+                if (item.time === null) {
+                    const estimatedValue = this.estimateValue(date, validData);
+                    console.log(`${dateStr}: valore originale null, stimato ${estimatedValue.toFixed(2)}`);
+                    
                     result.push({
                         date: new Date(date),
                         time: estimatedValue,
                         isOriginal: false
                     });
+                } else {
+                    // Usa il valore originale
+                    result.push(item);
                 }
+            } else {
+                // Giorno lavorativo mancante: stima il valore
+                const estimatedValue = this.estimateValue(date, validData);
+                console.log(`${dateStr}: giorno mancante, stimato ${estimatedValue.toFixed(2)}`);
+                
+                result.push({
+                    date: new Date(date),
+                    time: estimatedValue,
+                    isOriginal: false
+                });
             }
         }
         
         // Ordina i risultati per data
         result.sort((a, b) => a.date - b.date);
-        console.log(`Risultato finale: ${result.length} valori (originali + stimati)`);
+        
+        // Log dei dati stimati
+        const numOriginali = result.filter(item => item.isOriginal).length;
+        const numStimati = result.filter(item => !item.isOriginal).length;
+        console.log(`Risultato: ${result.length} valori totali (${numOriginali} originali, ${numStimati} stimati)`);
         
         return result;
     }
     
     // Stima un valore mancante basato sui valori vicini
     estimateValue(date, data) {
+        if (data.length === 0) {
+            console.warn('Nessun dato per stimare i valori');
+            return null;
+        }
+        
+        // Se c'è solo un valore valido, usalo per tutti
+        if (data.length === 1) {
+            return data[0].time;
+        }
+        
+        // Datatime target
+        const targetTime = date.getTime();
+        
         // Cerca valori più vicini (prima e dopo la data mancante)
         let prevValue = null;
         let nextValue = null;
         
-        let prevItem = null;
-        let nextItem = null;
-        
-        let minPrevDiff = Infinity;
-        let minNextDiff = Infinity;
+        let prevDate = null;
+        let nextDate = null;
         
         // Cerca il valore precedente e successivo più vicino
         for (const item of data) {
-            if (item.time === null) continue; // Salta valori nulli
+            const itemTime = item.date.getTime();
+            const diff = targetTime - itemTime;
             
-            const diff = date.getTime() - item.date.getTime();
-            
-            if (diff > 0 && diff < minPrevDiff) {
-                minPrevDiff = diff;
-                prevValue = item.time;
-                prevItem = item;
-            } else if (diff < 0 && Math.abs(diff) < minNextDiff) {
-                minNextDiff = Math.abs(diff);
-                nextValue = item.time;
-                nextItem = item;
+            if (diff > 0) { // Data precedente
+                if (prevDate === null || (itemTime > prevDate)) {
+                    prevDate = itemTime;
+                    prevValue = item.time;
+                }
+            } else if (diff < 0) { // Data successiva
+                if (nextDate === null || (itemTime < nextDate)) {
+                    nextDate = itemTime;
+                    nextValue = item.time;
+                }
+            } else { // Data esatta
+                return item.time;
             }
         }
         
-        console.log(`Stima per ${date.toISOString().split('T')[0]}: prev=${prevValue}, next=${nextValue}`);
-        
-        // Se abbiamo entrambi i valori, calcoliamo una media ponderata in base alla distanza
+        // Se abbiamo entrambi i valori, interpoliamo linearmente
         if (prevValue !== null && nextValue !== null) {
             // Calcolo di interpolazione lineare
-            const totalDiff = minPrevDiff + minNextDiff;
-            const weightPrev = minNextDiff / totalDiff;
-            const weightNext = minPrevDiff / totalDiff;
-            const estimatedValue = (prevValue * weightPrev) + (nextValue * weightNext);
+            const totalDistance = nextDate - prevDate;
+            const targetPosition = targetTime - prevDate;
+            const weight = totalDistance === 0 ? 0.5 : targetPosition / totalDistance;
+            
+            const estimatedValue = prevValue + (weight * (nextValue - prevValue));
+            
+            console.log(`Stima per ${date.toISOString().split('T')[0]}: ${prevValue.toFixed(2)} → ${estimatedValue.toFixed(2)} ← ${nextValue.toFixed(2)}`);
             return estimatedValue;
         }
         
-        // Altrimenti usiamo il valore disponibile
-        return prevValue !== null ? prevValue : nextValue;
+        // Se abbiamo solo un valore, usiamo quello
+        if (prevValue !== null) {
+            console.log(`Stima per ${date.toISOString().split('T')[0]}: solo precedente ${prevValue.toFixed(2)}`);
+            return prevValue;
+        }
+        
+        if (nextValue !== null) {
+            console.log(`Stima per ${date.toISOString().split('T')[0]}: solo successivo ${nextValue.toFixed(2)}`);
+            return nextValue;
+        }
+        
+        // Non dovremmo mai arrivare qui
+        console.error('Impossibile stimare il valore!');
+        return null;
     }
     
     // Calcola la deviazione standard
@@ -385,17 +438,16 @@ class DatasetVisualizer {
         // Prepara i dataset per Chart.js
         const dataPoints = [];  // Per tutti i punti (originali e stimati)
         const pointColors = []; // Colore per ogni punto
-        const pointRadiuses = []; // Dimensione per ogni punto
         const labels = [];
         
-        // Raccogliamo tutti i valori per il calcolo statistico
+        // Raccogliamo tutti i valori per il calcolo statistico e per la scala dell'asse Y
         const allTimes = [];
         
         filteredData.forEach(item => {
             const formattedDate = this.formatDate(item.date);
             labels.push(formattedDate);
             
-            // Se il tempo è null, lo sostituiamo con un valore stimato
+            // Se il tempo è null, salta questo punto (non dovrebbe succedere perché abbiamo già stimato)
             if (item.time === null) {
                 console.warn(`Trovato valore null per ${formattedDate}, dovrebbe essere già stato stimato`);
                 return; // Salta questo punto
@@ -406,22 +458,23 @@ class DatasetVisualizer {
             
             // Colore rosso per i punti stimati, blu per gli originali
             pointColors.push(item.isOriginal ? '#0d6efd' : '#dc3545');
-            
-            // Dimensione maggiore per i punti originali
-            pointRadiuses.push(item.isOriginal ? 5 : 5);
         });
         
         console.log(`Punti validi per il grafico: ${dataPoints.length}`);
+        console.log(`Colori: ${pointColors.length} (rossi: ${pointColors.filter(c => c === '#dc3545').length})`);
         
         // Determina il range per l'asse Y basato sui dati filtrati
         const minValue = Math.min(...allTimes);
         const maxValue = Math.max(...allTimes);
-        const valuePadding = (maxValue - minValue) * 0.1; // 10% di padding
+        const range = maxValue - minValue;
         
-        console.log(`Range asse Y: ${minValue.toFixed(2)} - ${maxValue.toFixed(2)} (con padding: ${(minValue-valuePadding).toFixed(2)} - ${(maxValue+valuePadding).toFixed(2)})`);
+        // Aggiungiamo un margine del 10% sopra e sotto
+        const padding = range * 0.1;
+        const yMin = Math.max(0, minValue - padding);
+        const yMax = maxValue + padding;
         
-        // Calcola le bande di deviazione standard dinamica per ogni punto
-        const stdDevBands = this.calculateRollingStdDev(allTimes, 5); // Finestra di 5 punti
+        console.log(`Range asse Y: min=${minValue.toFixed(2)}, max=${maxValue.toFixed(2)}, range=${range.toFixed(2)}`);
+        console.log(`Scala asse Y con padding: ${yMin.toFixed(2)} - ${yMax.toFixed(2)}`);
         
         // Configurazione del grafico
         this.chart = new Chart(ctx, {
@@ -438,27 +491,9 @@ class DatasetVisualizer {
                         fill: false,
                         pointBackgroundColor: pointColors,
                         pointBorderColor: pointColors,
-                        pointRadius: pointRadiuses,
+                        pointRadius: 5,
                         pointHoverRadius: 7,
-                        spanGaps: true // Importante: collega i punti anche con valori mancanti
-                    },
-                    {
-                        label: 'Limite superiore dev. std.',
-                        data: stdDevBands.upper,
-                        borderColor: 'rgba(13, 110, 253, 0.3)',
-                        backgroundColor: 'rgba(13, 110, 253, 0)',
-                        borderWidth: 1,
-                        pointRadius: 0,
-                        fill: false
-                    },
-                    {
-                        label: 'Limite inferiore dev. std.',
-                        data: stdDevBands.lower,
-                        borderColor: 'rgba(13, 110, 253, 0.3)',
-                        backgroundColor: 'rgba(13, 110, 253, 0.2)',
-                        borderWidth: 1,
-                        pointRadius: 0,
-                        fill: 1 // Riempi tra questo dataset e quello sopra
+                        spanGaps: true
                     }
                 ]
             },
@@ -472,7 +507,7 @@ class DatasetVisualizer {
                 plugins: {
                     title: {
                         display: true,
-                        text: 'Dati giornalieri con stime e deviazione standard',
+                        text: 'Dati giornalieri con stime',
                         font: {
                             size: 16,
                             weight: 'bold'
@@ -489,10 +524,6 @@ class DatasetVisualizer {
                                     const isOriginal = filteredData[index].isOriginal;
                                     const tipo = isOriginal ? "originale" : "stimato";
                                     return `Orario (${tipo}): ${context.raw.toFixed(2)}`;
-                                } else if (context.datasetIndex === 1) {
-                                    return `Limite superiore dev. std.: ${context.raw.toFixed(2)}`;
-                                } else if (context.datasetIndex === 2) {
-                                    return `Limite inferiore dev. std.: ${context.raw.toFixed(2)}`;
                                 }
                                 return '';
                             }
@@ -520,9 +551,15 @@ class DatasetVisualizer {
                         grid: {
                             color: 'rgba(255, 255, 255, 0.1)'
                         },
-                        // Imposta i limiti dell'asse Y in base ai dati correnti
-                        suggestedMin: minValue - valuePadding,
-                        suggestedMax: maxValue + valuePadding
+                        // Impostiamo un range flessibile che si adatta ai dati
+                        min: yMin,
+                        max: yMax,
+                        ticks: {
+                            // Formato con due decimali
+                            callback: function(value) {
+                                return value.toFixed(2);
+                            }
+                        }
                     }
                 }
             }
