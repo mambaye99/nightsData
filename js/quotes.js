@@ -4,8 +4,8 @@ class QuotesManager {
         // Citazioni iniziali (puoi aggiungerne di più o caricarle da un file JSON)
         this.quotes = [
             {
-                text: "La curiosità è la cosa più preziosa che abbiamo.",
-                author: "Albert Einstein"
+                text: "Ci sono due tipi di uomini: quelli che parlano di donne e quelli che parlano con le donne; io di donne preferisco non parlare",
+                author: "The Attorney Nights"
             },
             {
                 text: "La misura dell'intelligenza è data dalla capacità di cambiare quando è necessario.",
