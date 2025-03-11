@@ -606,7 +606,7 @@ class DatasetVisualizer {
                             padding: isMobile ? 2 : 5, // Meno padding su mobile
                             // Mostra meno etichette su schermi piccoli
                             autoSkip: true,
-                            maxTicksLimit: isMobile ? 8 : 15
+                            maxTicksLimit: isMobile ? 6 : 15
                         },
                         border: {
                             display: true,
@@ -755,7 +755,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (window.datasetVisualizer && window.datasetVisualizer.chart) {
                     window.datasetVisualizer.updateChart();
                 }
-            }, 200);
+            }, 300);
         });
     }
 });
