@@ -37,6 +37,22 @@ document.addEventListener('DOMContentLoaded', function() {
             el.textContent = el.getAttribute(`data-lang-${lang}`);
         });
         
+        if (window.cactusCommentSection) {
+            const loginText = lang === 'en' ? 'Login to comment' : 'Accedi per commentare';
+            const guestText = lang === 'en' ? 'Comment as guest' : 'Commenta come ospite';
+            
+            const loginButtons = document.querySelectorAll('.cactus-login-text');
+            const guestButtons = document.querySelectorAll('.cactus-guest-button');
+            
+            loginButtons.forEach(button => {
+                button.textContent = loginText;
+            });
+            
+            guestButtons.forEach(button => {
+                button.textContent = guestText;
+            });
+        }
+        
         // Update document language
         document.documentElement.lang = lang;
     }

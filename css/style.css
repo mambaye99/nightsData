@@ -655,3 +655,55 @@ footer {
         padding: 1rem;
     }
 }
+
+/* Cactus Comments styles */
+.cactus-comments-container {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    margin-top: 1.5rem;
+}
+
+.cactus-comments-container .cactus-button {
+    background-color: #0d6efd;
+    border-color: #0d6efd;
+}
+
+.cactus-comments-container .cactus-button:hover {
+    background-color: #0b5ed7;
+}
+
+.cactus-comments-container .cactus-editor-container {
+    border-color: #ccc;
+    border-radius: 4px;
+}
+
+.cactus-comments-container .cactus-comment {
+    border-bottom: 1px solid #e0e0e0;
+    padding-bottom: 1rem;
+    margin-bottom: 1rem;
+}
+
+.cactus-comments-container .cactus-comment:last-child {
+    border-bottom: none;
+}
+
+.cactus-comments-container .cactus-comment-avatar img {
+    border-radius: 50%;
+}
+
+.cactus-comments-container .cactus-comment-content {
+    background-color: #f8f9fa;
+    border-radius: 6px;
+    padding: 0.8rem;
+}
+
+.cactus-comments-container .cactus-matrixid {
+    font-size: 0.8rem;
+    opacity: 0.7;
+}
+
+.loading-comments {
+    text-align: center;
+    padding: 1rem;
+    color: #666;
+    font-style: italic;
+}

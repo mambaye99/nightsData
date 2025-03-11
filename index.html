@@ -70,23 +70,32 @@
             </div>
         </section>
         
+        <!-- Sezione commenti con Utterances -->
+        <!-- Sezione commenti con Cactus Comments -->
         <section class="comments-section">
             <h2 data-lang-it="Commenti" data-lang-en="Comments">Commenti</h2>
-            <div id="comments-container">
-                <!-- Comments will be loaded here -->
+            
+            <!-- Cactus Comments Container -->
+            <div id="comment-section" class="cactus-comments-container">
+                <div class="loading-comments" data-lang-it="Caricamento commenti..." data-lang-en="Loading comments...">
+                    Caricamento commenti...
+                </div>
             </div>
             
-            <form id="comment-form" class="add-comment-form">
-                <div class="form-group">
-                    <label for="comment-name" data-lang-it="Nome:" data-lang-en="Name:">Nome:</label>
-                    <input type="text" id="comment-name" required>
-                </div>
-                <div class="form-group">
-                    <label for="comment-text" data-lang-it="Commento:" data-lang-en="Comment:">Commento:</label>
-                    <textarea id="comment-text" required></textarea>
-                </div>
-                <button type="submit" data-lang-it="Invia commento" data-lang-en="Post comment">Invia commento</button>
-            </form>
+            <!-- Cactus Comments Script -->
+            <script type="text/javascript" src="https://latest.cactus.chat/cactus.js"></script>
+            <link rel="stylesheet" href="https://latest.cactus.chat/style.css" type="text/css">
+            <script>
+                document.addEventListener('DOMContentLoaded', function() {
+                    initComments({
+                        node: document.getElementById("comment-section"),
+                        defaultHomeserverUrl: "https://matrix.cactus.chat:8448",
+                        serverName: "cactus.chat",
+                        siteName: "nights-data", // Replace with your site identifier
+                        commentSectionId: window.location.pathname
+                    });
+                });
+            </script>
         </section>
         
         <div class="contact-container">
@@ -146,10 +155,6 @@
     <script src="js/chart.js"></script>
     <script src="js/quotes.js"></script>
     <script src="js/language.js"></script>
-    <script src="js/comments.js"></script>
     <script src="js/contact.js"></script>
-    <!-- Firebase SDK -->
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 </body>
 </html>
