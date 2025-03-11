@@ -73,23 +73,127 @@
         <section class="comments-section">
             <h2 data-lang-it="Commenti" data-lang-en="Comments">Commenti</h2>
             
-            <!-- Cactus Comments Container -->
-            <div id="comment-section"></div>
-            
-            <!-- Cactus Comments Script -->
-            <script type="text/javascript" src="https://latest.cactus.chat/cactus.js"></script>
-            <link rel="stylesheet" href="https://latest.cactus.chat/style.css" type="text/css">
-            <script>
-                window.addEventListener('load', function() {
-                    initComments({
-                        node: document.getElementById("comment-section"),
-                        defaultHomeserverUrl: "https://matrix.cactus.chat:8448",
-                        serverName: "cactus.chat",
-                        siteName: "nightsData", // Usa un nome univoco per il tuo sito
-                        commentSectionId: "main-section"
-                    });
+            <div id="simple-comments">
+                <div id="comments-list"></div>
+                
+                <form id="simple-comment-form" class="comment-form">
+                    <h3 data-lang-it="Lascia un commento" data-lang-en="Leave a comment">Lascia un commento</h3>
+                    <div class="form-group">
+                        <label for="comment-name">Nome:</label>
+                        <input type="text" id="comment-name" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="comment-text">Commento:</label>
+                        <textarea id="comment-text" required></textarea>
+                    </div>
+                    <button type="submit">Invia commento</button>
                     
-                    console.log("Cactus Comments inizializzato");
+                </form>
+            </div>
+            
+            <script>
+                document.addEventListener('DOMContentLoaded', function() {
+                    const commentForm = document.getElementById('simple-comment-form');
+                    const commentsList = document.getElementById('comments-list');
+                    
+                    // Carica commenti salvati
+                    loadComments();
+                    
+                    // Gestisci invio dei commenti
+                    if (commentForm) {
+                        commentForm.addEventListener('submit', function(e) {
+                            e.preventDefault();
+                            
+                            const name = document.getElementById('comment-name').value.trim();
+                            const text = document.getElementById('comment-text').value.trim();
+                            
+                            if (name && text) {
+                                // Crea oggetto commento
+                                const comment = {
+                                    name: name,
+                                    text: text,
+                                    date: new Date().toISOString(),
+                                    likes: 0
+                                };
+                                
+                                // Salva il commento
+                                saveComment(comment);
+                                
+                                // Ripulisci il form
+                                commentForm.reset();
+                                
+                                // Ricarica i commenti
+                                loadComments();
+                            }
+                        });
+                    }
+                    
+                    function loadComments() {
+                        if (!commentsList) return;
+                        
+                        let comments = [];
+                        try {
+                            const savedComments = localStorage.getItem('site-comments');
+                            comments = savedComments ? JSON.parse(savedComments) : [];
+                        } catch (e) {
+                            console.error('Errore nel caricamento commenti:', e);
+                            comments = [];
+                        }
+                        
+                        // Svuota la lista
+                        commentsList.innerHTML = '';
+                        
+                        if (comments.length === 0) {
+                            commentsList.innerHTML = '<p class="no-comments">Nessun commento ancora. Sii il primo a commentare!</p>';
+                            return;
+                        }
+                        
+                        // Ordina commenti (più recenti prima)
+                        comments.sort((a, b) => new Date(b.date) - new Date(a.date));
+                        
+                        // Mostra commenti
+                        comments.forEach(comment => {
+                            const date = new Date(comment.date);
+                            const formattedDate = date.toLocaleDateString() + ' ' + 
+                                                date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                            
+                            const commentEl = document.createElement('div');
+                            commentEl.className = 'comment';
+                            commentEl.innerHTML = `
+                                <div class="comment-header">
+                                    <strong>${escapeHtml(comment.name)}</strong>
+                                    <span class="comment-date">${formattedDate}</span>
+                                </div>
+                                <div class="comment-body">
+                                    <p>${escapeHtml(comment.text)}</p>
+                                </div>
+                            `;
+                            
+                            commentsList.appendChild(commentEl);
+                        });
+                    }
+                    
+                    function saveComment(comment) {
+                        let comments = [];
+                        try {
+                            const savedComments = localStorage.getItem('site-comments');
+                            comments = savedComments ? JSON.parse(savedComments) : [];
+                        } catch (e) {
+                            comments = [];
+                        }
+                        
+                        comments.push(comment);
+                        localStorage.setItem('site-comments', JSON.stringify(comments));
+                    }
+                    
+                    function escapeHtml(unsafe) {
+                        return unsafe
+                            .replace(/&/g, "&amp;")
+                            .replace(/</g, "&lt;")
+                            .replace(/>/g, "&gt;")
+                            .replace(/"/g, "&quot;")
+                            .replace(/'/g, "&#039;");
+                    }
                 });
             </script>
         </section>
