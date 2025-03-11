@@ -70,30 +70,26 @@
             </div>
         </section>
         
-        <!-- Sezione commenti con Utterances -->
-        <!-- Sezione commenti con Cactus Comments -->
         <section class="comments-section">
             <h2 data-lang-it="Commenti" data-lang-en="Comments">Commenti</h2>
             
             <!-- Cactus Comments Container -->
-            <div id="comment-section" class="cactus-comments-container">
-                <div class="loading-comments" data-lang-it="Caricamento commenti..." data-lang-en="Loading comments...">
-                    Caricamento commenti...
-                </div>
-            </div>
+            <div id="comment-section"></div>
             
             <!-- Cactus Comments Script -->
             <script type="text/javascript" src="https://latest.cactus.chat/cactus.js"></script>
             <link rel="stylesheet" href="https://latest.cactus.chat/style.css" type="text/css">
             <script>
-                document.addEventListener('DOMContentLoaded', function() {
+                window.addEventListener('load', function() {
                     initComments({
                         node: document.getElementById("comment-section"),
                         defaultHomeserverUrl: "https://matrix.cactus.chat:8448",
                         serverName: "cactus.chat",
-                        siteName: "nights-data", // Replace with your site identifier
-                        commentSectionId: window.location.pathname
+                        siteName: "nightsData", // Usa un nome univoco per il tuo sito
+                        commentSectionId: "main-section"
                     });
+                    
+                    console.log("Cactus Comments inizializzato");
                 });
             </script>
         </section>
