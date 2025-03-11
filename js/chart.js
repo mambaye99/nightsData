@@ -9,6 +9,8 @@ class DatasetVisualizer {
         this.processedData = [];
         this.chart = null;
         this.currentMonth = 'all';
+
+        this.resizeTimer = null;
         
         // Riferimenti agli elementi DOM
         this.chartElement = document.getElementById('dataChart');
@@ -25,6 +27,8 @@ class DatasetVisualizer {
         } else {
             console.error('Elemento select per i mesi non trovato!');
         }
+        // Gestione del resize per garantire la responsività
+        window.addEventListener('resize', this.handleResize.bind(this));
         
         // Inizializzazione
         this.loadData();
@@ -34,6 +38,21 @@ class DatasetVisualizer {
     isMobileDevice() {
         return window.innerWidth <= 768 || 
                /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    }
+
+    // Gestisce il ridimensionamento della finestra
+    handleResize() {
+        // Aggiorna il grafico solo se è già stato inizializzato
+        if (this.chart) {
+            // Aspetta che il ridimensionamento sia completato
+            if (this.resizeTimer) {
+                clearTimeout(this.resizeTimer);
+            }
+            this.resizeTimer = setTimeout(() => {
+                this.updateChart();
+                console.log('Grafico ridimensionato e aggiornato');
+            }, 250);
+        }
     }
     
     // Carica il dataset o usa dati di esempio
@@ -481,6 +500,9 @@ class DatasetVisualizer {
         const padding = range * 0.1;
         const yMin = Math.max(0, minValue - padding);
         const yMax = maxValue + padding;
+        // Assicura che la banda target (17:00-18:00) sia sempre visibile nel grafico
+        if (yMin > 17) yMin = 16.9; // Assicura che 17 sia visibile
+        if (yMax < 18) yMax = 18.1; // Assicura che 18 sia visibile
         
         console.log(`Range asse Y: min=${minValue.toFixed(2)}, max=${maxValue.toFixed(2)}, range=${range.toFixed(2)}`);
         console.log(`Scala asse Y con padding: ${yMin.toFixed(2)} - ${yMax.toFixed(2)}`);
@@ -632,7 +654,58 @@ class DatasetVisualizer {
                         }
                     }
                 }
-            }
+            },
+            plugins: [{
+                id: 'targetBandHighlight',
+                beforeDatasetsDraw: (chart) => {
+                    const ctx = chart.ctx;
+                    const yAxis = chart.scales.y;
+                    
+                    // Calculate Y coordinates for 17:00-18:00 range
+                    const y17 = yAxis.getPixelForValue(17);
+                    const y18 = yAxis.getPixelForValue(18);
+                    
+                    // Draw the reference band
+                    ctx.save();
+                    ctx.fillStyle = 'rgba(75, 192, 192, 0.15)';
+                    ctx.fillRect(chart.chartArea.left, y17, chart.chartArea.right - chart.chartArea.left, y18 - y17);
+                    
+                    // Dashed borders for the band
+                    ctx.strokeStyle = 'rgba(75, 192, 192, 0.6)';
+                    ctx.setLineDash([5, 5]);
+                    ctx.lineWidth = 1;
+                    
+                    // Horizontal line at 17:00
+                    ctx.beginPath();
+                    ctx.moveTo(chart.chartArea.left, y17);
+                    ctx.lineTo(chart.chartArea.right, y17);
+                    ctx.stroke();
+                    
+                    // Horizontal line at 18:00
+                    ctx.beginPath();
+                    ctx.moveTo(chart.chartArea.left, y18);
+                    ctx.lineTo(chart.chartArea.right, y18);
+                    ctx.stroke();
+                    
+                    // Add "Target" label (not on mobile)
+                    if (!this.isMobileDevice()) {
+                        ctx.fillStyle = 'rgba(75, 192, 192, 0.8)';
+                        ctx.fillRect(chart.chartArea.left + 5, y17 - 20, 140, 20);
+                        ctx.fillStyle = 'white';
+                        ctx.font = '12px Arial';
+                        ctx.fillText('Target: 17:00-18:00', chart.chartArea.left + 10, y17 - 7);
+                    } else {
+                        // On mobile, smaller label
+                        ctx.fillStyle = 'rgba(75, 192, 192, 0.8)';
+                        ctx.fillRect(chart.chartArea.left + 2, y17 - 16, 95, 16);
+                        ctx.fillStyle = 'white';
+                        ctx.font = '10px Arial';
+                        ctx.fillText('Target: 17-18', chart.chartArea.left + 5, y17 - 4);
+                    }
+                    
+                    ctx.restore();
+                }
+            }]
         });
     }
     

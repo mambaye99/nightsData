@@ -7,7 +7,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="white">
 
-    <title>Rilascio della Penna</title>
+    <title data-lang-it="Rilascio della Penna" data-lang-en="Pen Release">Rilascio della Penna</title>
     <!-- CSS -->
     <link rel="stylesheet" href="css/style.css">
     <!-- Librerie esterne da CDN -->
@@ -19,6 +19,8 @@
         <!-- Pattern di sfondo -->
     </div>
 
+    <button id="language-toggle" class="lang-toggle">English</button>
+
     <header>
         <div class="header-container">
             <div class="profile-image">
@@ -26,7 +28,7 @@
             </div>
             <div class="quote-container">
                 <blockquote>
-                    <p id="main-quote">"Ci sono due tipi di uomini: quelli che parlano di donne e quelli che parlano con le donne; io di donne preferisco non parlare."</p>
+                    <p id="main-quote" data-lang-it="&quot;Ci sono due tipi di uomini: quelli che parlano di donne e quelli che parlano con le donne; io di donne preferisco non parlare.&quot;" data-lang-en="&quot;There are two types of men: those who talk about women and those who talk with women; I prefer not to talk about women.&quot;">"Ci sono due tipi di uomini: quelli che parlano di donne e quelli che parlano con le donne; io di donne preferisco non parlare."</p>
                     <cite id="main-author">— The Attorney Nights</cite>
                 </blockquote>
             </div>
@@ -35,12 +37,12 @@
 
     <main>
         <section class="chart-section">
-            <h2>Rilascio della Penna</h2>
+            <h2 data-lang-it="Rilascio della Penna" data-lang-en="Pen Release">Rilascio della Penna</h2>
             
             <div class="filter-controls">
-                <label for="month-filter">Filtra per mese:</label>
+                <label for="month-filter" data-lang-it="Filtra per mese:" data-lang-en="Filter by month:">Filtra per mese:</label>
                 <select id="month-filter">
-                    <option value="all">Tutti i mesi</option>
+                    <option value="all" data-lang-it="Tutti i mesi" data-lang-en="All months">Tutti i mesi</option>
                     <!-- Altri mesi verranno aggiunti dinamicamente in base al dataset -->
                 </select>
             </div>
@@ -51,24 +53,74 @@
             
             <div class="legend">
                 <div class="legend-item">
-                    <span class="dot original"></span> Dati originali
+                    <span class="dot original"></span> 
+                    <span data-lang-it="Dati originali" data-lang-en="Original data">Dati originali</span>
                 </div>
                 <div class="legend-item">
-                    <span class="dot estimated"></span> Dati stimati
+                    <span class="dot estimated"></span> 
+                    <span data-lang-it="Dati stimati" data-lang-en="Estimated data">Dati stimati</span>
                 </div>
             </div>
         </section>
 
         <section class="quotes-section">
-            <h2>Citazioni</h2>
+            <h2 data-lang-it="Citazioni" data-lang-en="Quotes">Citazioni</h2>
             <div id="quotes-container">
                 <!-- Le citazioni verranno caricate dinamicamente da quotes.js -->
             </div>
         </section>
+        
+        <section class="comments-section">
+            <h2 data-lang-it="Commenti" data-lang-en="Comments">Commenti</h2>
+            <div id="comments-container">
+                <!-- Comments will be loaded here -->
+            </div>
+            
+            <form id="comment-form" class="add-comment-form">
+                <div class="form-group">
+                    <label for="comment-name" data-lang-it="Nome:" data-lang-en="Name:">Nome:</label>
+                    <input type="text" id="comment-name" required>
+                </div>
+                <div class="form-group">
+                    <label for="comment-text" data-lang-it="Commento:" data-lang-en="Comment:">Commento:</label>
+                    <textarea id="comment-text" required></textarea>
+                </div>
+                <button type="submit" data-lang-it="Invia commento" data-lang-en="Post comment">Invia commento</button>
+            </form>
+        </section>
+        
+        <div class="contact-container">
+            <button id="contact-button" data-lang-it="Contattaci" data-lang-en="Contact Us">Contattaci</button>
+            <div id="contact-form" class="contact-form hidden">
+                <h3 data-lang-it="Invia un messaggio" data-lang-en="Send a message">Invia un messaggio</h3>
+                <form id="email-form">
+                    <div class="form-group">
+                        <label for="email-name" data-lang-it="Nome:" data-lang-en="Name:">Nome:</label>
+                        <input type="text" id="email-name" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="email-address" data-lang-it="La tua email:" data-lang-en="Your email:">La tua email:</label>
+                        <input type="email" id="email-address" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="email-subject" data-lang-it="Oggetto:" data-lang-en="Subject:">Oggetto:</label>
+                        <input type="text" id="email-subject" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="email-message" data-lang-it="Messaggio:" data-lang-en="Message:">Messaggio:</label>
+                        <textarea id="email-message" required></textarea>
+                    </div>
+                    <div class="form-actions">
+                        <button type="button" id="cancel-email" data-lang-it="Annulla" data-lang-en="Cancel">Annulla</button>
+                        <button type="submit" data-lang-it="Invia" data-lang-en="Send">Invia</button>
+                    </div>
+                </form>
+            </div>
+        </div>
     </main>
 
     <footer>
-        <p>&copy; <span id="current-year"></span> - Creato con ❤️</p>
+        <p>&copy; <span id="current-year"></span> - <span data-lang-it="Creato con ❤️" data-lang-en="Created with ❤️">Creato con ❤️</span></p>
     </footer>
 
     <!-- Script di verifica -->
@@ -93,5 +145,8 @@
     <!-- Script applicazione -->
     <script src="js/chart.js"></script>
     <script src="js/quotes.js"></script>
+    <script src="js/language.js"></script>
+    <script src="js/comments.js"></script>
+    <script src="js/contact.js"></script>
 </body>
 </html>
