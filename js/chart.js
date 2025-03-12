@@ -586,9 +586,19 @@ class DatasetVisualizer {
                             label: (context) => {
                                 if (context.datasetIndex === 0) {
                                     const index = context.dataIndex;
-                                    const isOriginal = filteredData[index].isOriginal;
-                                    const tipo = isOriginal ? "originale" : "stimato";
-                                    return `Orario (${tipo}): ${this.decimalToTimeFormat(context.raw)}`;
+                                    // Verifica che l'indice sia valido
+                                    if (index >= 0 && index < filteredData.length) {
+                                        // Verifica che il punto abbia la proprietà isOriginal
+                                        const isOriginal = filteredData[index] && filteredData[index].isOriginal !== undefined 
+                                            ? filteredData[index].isOriginal 
+                                            : false;
+                                        const tipo = isOriginal ? "originale" : "stimato";
+                                        return `Orario (${tipo}): ${this.decimalToTimeFormat(context.raw)}`;
+                                    } else {
+                                        // Nel caso l'indice non sia valido
+                                        console.warn(`Indice non valido nel tooltip: ${index}, lunghezza filteredData: ${filteredData.length}`);
+                                        return `Orario: ${this.decimalToTimeFormat(context.raw)}`;
+                                    }
                                 }
                                 return '';
                             }
