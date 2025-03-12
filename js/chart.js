@@ -146,8 +146,18 @@ class DatasetVisualizer {
             // Gestisci il valore orario (converte da formato italiano con virgola a float)
             let time = null;
             if (row.orario && row.orario.trim() !== '') {
-                // Sostituisci la virgola con il punto per il parsing numerico
-                time = parseFloat(row.orario.replace(',', '.'));
+                // Dividi la stringa in ore e minuti
+                const parts = row.orario.split(',');
+                if (parts.length === 2) {
+                    const hours = parseInt(parts[0]);
+                    const minutes = parseInt(parts[1]);
+                    // Converti in formato decimale (ore + minuti/60)
+                    time = hours + (minutes/60);
+                } else {
+                    // Fallback: prova a convertire direttamente
+                    console.warn(`Formato orario imprevisto: ${row.orario}, tentativo di conversione diretta`);
+                    time = parseFloat(row.orario.replace(',', '.'));
+                }
             }
             
             return {
@@ -444,8 +454,24 @@ class DatasetVisualizer {
     
     // Converte un valore decimale in formato orario (HH:MM)
     decimalToTimeFormat(decimal) {
+        // Assicuriamoci che il valore sia un numero
+        if (isNaN(decimal)) {
+            console.warn('Valore non numerico passato a decimalToTimeFormat:', decimal);
+            return 'N/A';
+        }
+        
+        // Estrai la parte intera (ore)
         const hour = Math.floor(decimal);
+        
+        // Calcola i minuti moltiplicando la parte decimale per 60
         const minutes = Math.round((decimal - hour) * 60);
+        
+        // Gestisci il caso in cui i minuti arrivano a 60
+        if (minutes === 60) {
+            return `${hour + 1}:00`;
+        }
+        
+        // Formatta con zero padding per i minuti
         return `${hour}:${minutes.toString().padStart(2, '0')}`;
     }
     
