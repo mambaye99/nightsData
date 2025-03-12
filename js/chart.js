@@ -690,17 +690,17 @@ class DatasetVisualizer {
                     // Add "Target" label (not on mobile)
                     if (!this.isMobileDevice()) {
                         ctx.fillStyle = 'rgba(75, 192, 192, 0.8)';
-                        ctx.fillRect(chart.chartArea.left + 5, y17 - 20, 140, 20);
+                        ctx.fillRect(chart.chartArea.left + 5, y17 - 20, 15, 20);
                         ctx.fillStyle = 'white';
                         ctx.font = '12px Arial';
-                        ctx.fillText('Target: 17:00-18:00', chart.chartArea.left + 10, y17 - 7);
+                        ctx.fillText('17-18', chart.chartArea.left + 10, y17 - 7);
                     } else {
                         // On mobile, smaller label
                         ctx.fillStyle = 'rgba(75, 192, 192, 0.8)';
-                        ctx.fillRect(chart.chartArea.left + 2, y17 - 16, 95, 16);
+                        ctx.fillRect(chart.chartArea.left + 2, y17 - 16, 15, 16);
                         ctx.fillStyle = 'white';
                         ctx.font = '10px Arial';
-                        ctx.fillText('Target: 17-18', chart.chartArea.left + 5, y17 - 4);
+                        ctx.fillText('17-18', chart.chartArea.left + 5, y17 - 4);
                     }
                     
                     ctx.restore();
