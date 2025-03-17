@@ -9,7 +9,8 @@ class DatasetVisualizer {
         this.processedData = [];
         this.chart = null;
         this.currentMonth = 'all';
-
+        this.lastFilteredData = [];  // Aggiunto per memorizzare i dati filtrati dell'ultima visualizzazione
+    
         this.resizeTimer = null;
         
         // Riferimenti agli elementi DOM
@@ -417,16 +418,26 @@ class DatasetVisualizer {
             return;
         }
         
-        // Distruggi il grafico esistente
-        this.chart.destroy();
-        
-        // Crea un nuovo grafico con i dati filtrati
         try {
+            // Distruggi il grafico esistente
+            this.chart.destroy();
+            this.chart = null; // Importante: imposta chart a null dopo la distruzione
+            
+            // Nascondi eventuali messaggi di errore
+            const existingError = this.chartElement.parentNode.querySelector('.error-message');
+            if (existingError) {
+                existingError.style.display = 'none';
+            }
+            
+            // Assicurati che il canvas sia visibile
+            this.chartElement.style.display = 'block';
+            
+            // Crea un nuovo grafico con i dati filtrati
             this.initChart();
             console.log('Grafico aggiornato con filtro mese:', this.currentMonth);
         } catch (error) {
             console.error('Errore durante l\'aggiornamento del grafico:', error);
-            this.showError('Errore durante l\'aggiornamento del grafico');
+            this.showError('Errore durante l\'aggiornamento del grafico: ' + error.message);
         }
     }
     
@@ -474,6 +485,47 @@ class DatasetVisualizer {
         // Formatta con zero padding per i minuti
         return `${hour}:${minutes.toString().padStart(2, '0')}`;
     }
+
+    // Calcola statistiche per i dati filtrati
+    calculateStatistics(data) {
+        if (!data || data.length === 0) {
+            return { mean: 0, median: 0, stdDev: 0 };
+        }
+        
+        // Estrai solo i valori temporali
+        const values = data.map(item => item.time).filter(val => val !== null);
+        
+        if (values.length === 0) {
+            return { mean: 0, median: 0, stdDev: 0 };
+        }
+        
+        // Calcola la media
+        const sum = values.reduce((acc, val) => acc + val, 0);
+        const mean = sum / values.length;
+        
+        // Calcola la mediana (ordina i valori e prendi quello centrale)
+        const sortedValues = [...values].sort((a, b) => a - b);
+        let median;
+        
+        if (sortedValues.length % 2 === 0) {
+            // Se il numero di elementi è pari, la mediana è la media dei due valori centrali
+            const midIndex = sortedValues.length / 2;
+            median = (sortedValues[midIndex - 1] + sortedValues[midIndex]) / 2;
+        } else {
+            // Se il numero di elementi è dispari, la mediana è il valore centrale
+            const midIndex = Math.floor(sortedValues.length / 2);
+            median = sortedValues[midIndex];
+        }
+        
+        // Calcola la deviazione standard
+        const squaredDiffs = values.map(val => Math.pow(val - mean, 2));
+        const variance = squaredDiffs.reduce((acc, val) => acc + val, 0) / values.length;
+        const stdDev = Math.sqrt(variance);
+        
+        console.log(`Statistiche calcolate: Media=${mean.toFixed(2)}, Mediana=${median.toFixed(2)}, Deviazione std=${stdDev.toFixed(2)}`);
+        
+        return { mean, median, stdDev };
+    }
     
     // Inizializza il grafico Chart.js
     initChart() {
@@ -488,6 +540,9 @@ class DatasetVisualizer {
             this.showError('Nessun dato disponibile per il periodo selezionato');
             return;
         }
+
+        // Calcola le statistiche per i dati filtrati
+        const stats = this.calculateStatistics(filteredData);
         
         // Prepara i dataset per Chart.js
         const dataPoints = [];  // Per tutti i punti (originali e stimati)
@@ -723,26 +778,64 @@ class DatasetVisualizer {
                     ctx.lineTo(chart.chartArea.right, y18);
                     ctx.stroke();
                     
-                    // Add "Target" label (not on mobile)
-                    if (!this.isMobileDevice()) {
-                        ctx.fillStyle = 'rgba(75, 192, 192, 0.8)';
-                        ctx.fillRect(chart.chartArea.left + 5, y17 - 20, 15, 20);
-                        ctx.fillStyle = 'white';
-                        ctx.font = '12px Arial';
-                        ctx.fillText('17-18', chart.chartArea.left + 10, y17 - 7);
-                    } else {
-                        // On mobile, smaller label
-                        ctx.fillStyle = 'rgba(75, 192, 192, 0.8)';
-                        ctx.fillRect(chart.chartArea.left + 2, y17 - 16, 15, 16);
-                        ctx.fillStyle = 'white';
-                        ctx.font = '10px Arial';
-                        ctx.fillText('17-18', chart.chartArea.left + 5, y17 - 4);
-                    }
+                    ctx.restore();
+                }
+            }, {  // Note this comma and opening a new object in the array
+                id: 'statisticsBox',
+                afterDraw: (chart) => {
+                    const ctx = chart.ctx;
+                    const chartArea = chart.chartArea;
+                    
+                    // Dimensioni del riquadro statistiche
+                    const boxWidth = isMobile ? 100 : 150;
+                    const boxHeight = isMobile ? 80 : 90;
+                    const padding = 8;
+                    
+                    // Posizione del riquadro (angolo in alto a destra, fuori dall'area del grafico)
+                    const boxX = chartArea.right - boxWidth - 5;
+                    const boxY = chartArea.top + 5;
+                    
+                    // Disegna il riquadro con sfondo semi-trasparente
+                    ctx.save();
+                    ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+                    ctx.strokeStyle = 'rgba(0, 0, 0, 0.2)';
+                    ctx.lineWidth = 1;
+                    ctx.shadowColor = 'rgba(0, 0, 0, 0.2)';
+                    ctx.shadowBlur = 4;
+                    ctx.shadowOffsetX = 1;
+                    ctx.shadowOffsetY = 1;
+                    
+                    // Rettangolo arrotondato
+                    const radius = 6;
+                    ctx.beginPath();
+                    ctx.moveTo(boxX + radius, boxY);
+                    ctx.lineTo(boxX + boxWidth - radius, boxY);
+                    ctx.quadraticCurveTo(boxX + boxWidth, boxY, boxX + boxWidth, boxY + radius);
+                    ctx.lineTo(boxX + boxWidth, boxY + boxHeight - radius);
+                    ctx.quadraticCurveTo(boxX + boxWidth, boxY + boxHeight, boxX + boxWidth - radius, boxY + boxHeight);
+                    ctx.lineTo(boxX + radius, boxY + boxHeight);
+                    ctx.quadraticCurveTo(boxX, boxY + boxHeight, boxX, boxY + boxHeight - radius);
+                    ctx.lineTo(boxX, boxY + radius);
+                    ctx.quadraticCurveTo(boxX, boxY, boxX + radius, boxY);
+                    ctx.closePath();
+                    ctx.fill();
+                    ctx.stroke();
+                    
+                    // Testo statistiche
+                    ctx.fillStyle = '#333';
+                    ctx.font = isMobile ? 'bold 10px Arial' : 'bold 12px Arial';
+                    ctx.textAlign = 'left';
+                    ctx.fillText('Statistiche:', boxX + padding, boxY + padding + 12);
+                    
+                    ctx.font = isMobile ? '10px Arial' : '11px Arial';
+                    ctx.fillText(`Media: ${this.decimalToTimeFormat(stats.mean)}`, boxX + padding, boxY + padding + 32);
+                    ctx.fillText(`Mediana: ${this.decimalToTimeFormat(stats.median)}`, boxX + padding, boxY + padding + 48);
+                    ctx.fillText(`Dev.Std: ${stats.stdDev.toFixed(2)}`, boxX + padding, boxY + padding + 64);
                     
                     ctx.restore();
                 }
             }]
-        });
+        })
     }
     
     // Mostra un messaggio di errore
