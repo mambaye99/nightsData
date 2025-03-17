@@ -419,6 +419,7 @@ class DatasetVisualizer {
     }
     
     // Aggiorna il grafico con nuovi dati filtrati
+    // Aggiorna il grafico con nuovi dati filtrati
     updateChart() {
         if (!this.chart) {
             console.error('Chart non inizializzato');
@@ -447,7 +448,7 @@ class DatasetVisualizer {
             this.showError('Errore durante l\'aggiornamento del grafico: ' + error.message);
         }
     }
-    
+        
     // Ottieni i dati filtrati per il mese corrente
     getFilteredData() {
         if (this.currentMonth === 'all') {
@@ -494,6 +495,7 @@ class DatasetVisualizer {
     }
 
     // Calcola statistiche per i dati filtrati
+// Aggiungi questa funzione alla classe DatasetVisualizer
     calculateStatistics(data) {
         if (!data || data.length === 0) {
             return { mean: 0, median: 0, stdDev: 0 };
@@ -529,9 +531,27 @@ class DatasetVisualizer {
         const variance = squaredDiffs.reduce((acc, val) => acc + val, 0) / values.length;
         const stdDev = Math.sqrt(variance);
         
+        // Aggiorna il display delle statistiche
+        this.updateStatisticsDisplay(mean, median, stdDev);
+        
         console.log(`Statistiche calcolate: Media=${mean.toFixed(2)}, Mediana=${median.toFixed(2)}, Deviazione std=${stdDev.toFixed(2)}`);
         
         return { mean, median, stdDev };
+    }
+
+    // Nuova funzione per aggiornare il display delle statistiche
+    updateStatisticsDisplay(mean, median, stdDev) {
+        const meanElement = document.getElementById('stat-mean');
+        const medianElement = document.getElementById('stat-median');
+        const stddevElement = document.getElementById('stat-stddev');
+        
+        if (meanElement && medianElement && stddevElement) {
+            meanElement.textContent = this.decimalToTimeFormat(mean);
+            medianElement.textContent = this.decimalToTimeFormat(median);
+            stddevElement.textContent = stdDev.toFixed(2);
+        } else {
+            console.warn('Elementi statistiche non trovati nel DOM');
+        }
     }
     
     // Inizializza il grafico Chart.js
