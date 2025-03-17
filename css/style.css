@@ -768,3 +768,73 @@ footer {
         margin-top: 15px;
     }
 }
+
+/* Controlli del grafico (filtro e statistiche) */
+.chart-controls {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    margin-bottom: 20px;
+    gap: 15px;
+}
+
+.filter-controls {
+    flex: 1;
+    min-width: 200px;
+}
+
+.stats-container {
+    flex: 1;
+    min-width: 200px;
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    padding: 12px 15px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+.stats-container h4 {
+    margin-top: 0;
+    margin-bottom: 10px;
+    font-size: 16px;
+    color: #333;
+}
+
+.stats-table {
+    width: 100%;
+}
+
+.stats-table td {
+    padding: 3px 0;
+}
+
+.stats-table td:first-child {
+    font-weight: 500;
+}
+
+/* Responsive chart container */
+.chart-container {
+    position: relative;
+    height: 400px;
+    width: 100%;
+    margin-bottom: 15px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 767px) {
+    .chart-controls {
+        flex-direction: column;
+    }
+    
+    .filter-controls, .stats-container {
+        width: 100%;
+    }
+    
+    .chart-container {
+        height: 300px;
+    }
+    
+    /* Fix mobile height issues */
+    #dataChart {
+        max-height: 300px !important;
+    }
+}
