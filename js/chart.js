@@ -397,6 +397,7 @@ class DatasetVisualizer {
     }
     
     // Gestisce il cambio di filtro del mese
+    // Gestisce il cambio di filtro del mese
     handleMonthFilter(event) {
         console.log('Cambio filtro mese:', event.target.value);
         this.currentMonth = event.target.value;
@@ -406,6 +407,12 @@ class DatasetVisualizer {
             console.error('Formato mese non valido:', this.currentMonth);
             this.currentMonth = 'all'; // Fallback a tutti i mesi
         }
+        
+        // Ottieni i dati filtrati per calcolare le statistiche
+        const filteredData = this.getFilteredData();
+        
+        // Calcola e aggiorna le statistiche prima di aggiornare il grafico
+        this.calculateStatistics(filteredData);
         
         // Aggiorna il grafico con il nuovo filtro
         this.updateChart();
@@ -616,9 +623,18 @@ class DatasetVisualizer {
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
+                aspectRatio: isMobile ? 1.2 : 2, // Questo rapporto è migliore per mobile
                 interaction: {
                     mode: 'index',
                     intersect: false
+                },
+                layout: {
+                    padding: {
+                        right: 10,
+                        left: isMobile ? 0 : 10,
+                        top: 20,
+                        bottom: isMobile ? 0 : 10
+                    }
                 },
                 plugins: {
                     title: {
@@ -780,64 +796,65 @@ class DatasetVisualizer {
                     
                     ctx.restore();
                 }
-            }, {  // Note this comma and opening a new object in the array
-                id: 'statisticsBox',
-                afterDraw: (chart) => {
-                    const ctx = chart.ctx;
-                    const chartArea = chart.chartArea;
-                    
-                    // Dimensioni del riquadro statistiche
-                    const boxWidth = isMobile ? 100 : 150;
-                    const boxHeight = isMobile ? 80 : 90;
-                    const padding = 8;
-                    
-                    // Posizione del riquadro (angolo in alto a destra, fuori dall'area del grafico)
-                    const boxX = chartArea.right - boxWidth - 5;
-                    const boxY = chartArea.top + 5;
-                    
-                    // Disegna il riquadro con sfondo semi-trasparente
-                    ctx.save();
-                    ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
-                    ctx.strokeStyle = 'rgba(0, 0, 0, 0.2)';
-                    ctx.lineWidth = 1;
-                    ctx.shadowColor = 'rgba(0, 0, 0, 0.2)';
-                    ctx.shadowBlur = 4;
-                    ctx.shadowOffsetX = 1;
-                    ctx.shadowOffsetY = 1;
-                    
-                    // Rettangolo arrotondato
-                    const radius = 6;
-                    ctx.beginPath();
-                    ctx.moveTo(boxX + radius, boxY);
-                    ctx.lineTo(boxX + boxWidth - radius, boxY);
-                    ctx.quadraticCurveTo(boxX + boxWidth, boxY, boxX + boxWidth, boxY + radius);
-                    ctx.lineTo(boxX + boxWidth, boxY + boxHeight - radius);
-                    ctx.quadraticCurveTo(boxX + boxWidth, boxY + boxHeight, boxX + boxWidth - radius, boxY + boxHeight);
-                    ctx.lineTo(boxX + radius, boxY + boxHeight);
-                    ctx.quadraticCurveTo(boxX, boxY + boxHeight, boxX, boxY + boxHeight - radius);
-                    ctx.lineTo(boxX, boxY + radius);
-                    ctx.quadraticCurveTo(boxX, boxY, boxX + radius, boxY);
-                    ctx.closePath();
-                    ctx.fill();
-                    ctx.stroke();
-                    
-                    // Testo statistiche
-                    ctx.fillStyle = '#333';
-                    ctx.font = isMobile ? 'bold 10px Arial' : 'bold 12px Arial';
-                    ctx.textAlign = 'left';
-                    ctx.fillText('Statistiche:', boxX + padding, boxY + padding + 12);
-                    
-                    ctx.font = isMobile ? '10px Arial' : '11px Arial';
-                    ctx.fillText(`Media: ${this.decimalToTimeFormat(stats.mean)}`, boxX + padding, boxY + padding + 32);
-                    ctx.fillText(`Mediana: ${this.decimalToTimeFormat(stats.median)}`, boxX + padding, boxY + padding + 48);
-                    ctx.fillText(`Dev.Std: ${stats.stdDev.toFixed(2)}`, boxX + padding, boxY + padding + 64);
-                    
-                    ctx.restore();
-                }
             }]
         })
     }
-    
+    // Calcola statistiche per i dati filtrati
+    calculateStatistics(data) {
+        if (!data || data.length === 0) {
+            return { mean: 0, median: 0, stdDev: 0 };
+        }
+        
+        // Estrai solo i valori temporali (solo dai dati validi, non null)
+        const values = data.map(item => item.time).filter(val => val !== null);
+        
+        if (values.length === 0) {
+            return { mean: 0, median: 0, stdDev: 0 };
+        }
+        
+        // Calcola la media
+        const sum = values.reduce((acc, val) => acc + val, 0);
+        const mean = sum / values.length;
+        
+        // Calcola la mediana (ordina i valori e prendi quello centrale)
+        const sortedValues = [...values].sort((a, b) => a - b);
+        let median;
+        
+        if (sortedValues.length % 2 === 0) {
+            // Se il numero di elementi è pari, la mediana è la media dei due valori centrali
+            const midIndex = sortedValues.length / 2;
+            median = (sortedValues[midIndex - 1] + sortedValues[midIndex]) / 2;
+        } else {
+            // Se il numero di elementi è dispari, la mediana è il valore centrale
+            const midIndex = Math.floor(sortedValues.length / 2);
+            median = sortedValues[midIndex];
+        }
+        
+        // Calcola la deviazione standard
+        const squaredDiffs = values.map(val => Math.pow(val - mean, 2));
+        const variance = squaredDiffs.reduce((acc, val) => acc + val, 0) / values.length;
+        const stdDev = Math.sqrt(variance);
+        
+        // Aggiorna gli elementi HTML delle statistiche
+        this.updateStatsDisplay(mean, median, stdDev);
+        
+        console.log(`Statistiche calcolate: Media=${mean.toFixed(2)}, Mediana=${median.toFixed(2)}, Deviazione std=${stdDev.toFixed(2)}`);
+        
+        return { mean, median, stdDev };
+    }
+
+    // Nuova funzione per aggiornare il display delle statistiche
+    updateStatsDisplay(mean, median, stdDev) {
+        const meanElement = document.getElementById('stat-mean');
+        const medianElement = document.getElementById('stat-median');
+        const stddevElement = document.getElementById('stat-stddev');
+        
+        if (meanElement && medianElement && stddevElement) {
+            meanElement.textContent = this.decimalToTimeFormat(mean);
+            medianElement.textContent = this.decimalToTimeFormat(median);
+            stddevElement.textContent = stdDev.toFixed(2);
+        }
+    }
     // Mostra un messaggio di errore
     showError(message) {
         console.error('ERRORE VISUALIZZAZIONE:', message);

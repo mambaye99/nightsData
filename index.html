@@ -46,6 +46,15 @@
                     <!-- Altri mesi verranno aggiunti dinamicamente in base al dataset -->
                 </select>
             </div>
+
+            <div id="stats-box" class="stats-container">
+                <h4>Statistiche</h4>
+                <table class="stats-table">
+                  <tr><td>Media:</td><td id="stat-mean">--:--</td></tr>
+                  <tr><td>Mediana:</td><td id="stat-median">--:--</td></tr>
+                  <tr><td>Dev.Std:</td><td id="stat-stddev">0.00</td></tr>
+                </table>
+            </div>
             
             <div class="chart-container">
                 <canvas id="dataChart"></canvas>
