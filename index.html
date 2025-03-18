@@ -13,6 +13,9 @@
     <!-- Librerie esterne da CDN -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+    <!-- Bootstrap CSS e JS per i tab -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </head>
 <body>
     <div class="background-container">
@@ -56,9 +59,101 @@
                 </table>
             </div>
             
-            <div class="chart-container">
-                <canvas id="dataChart"></canvas>
-            </div>
+            <section class="chart-section">
+                <h2 data-lang-it="Visualizzazioni" data-lang-en="Visualizations">Visualizzazioni</h2>
+                
+                <!-- Nuovi tab di navigazione -->
+                <ul class="nav nav-tabs" id="visualizationTabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="orari-tab" data-bs-toggle="tab" data-bs-target="#orari-content" 
+                                type="button" role="tab" aria-controls="orari-content" aria-selected="true"
+                                data-lang-it="Orari Giornalieri" data-lang-en="Daily Times">
+                            Orari Giornalieri
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="stats-tab" data-bs-toggle="tab" data-bs-target="#stats-content" 
+                                type="button" role="tab" aria-controls="stats-content" aria-selected="false"
+                                data-lang-it="Statistiche" data-lang-en="Statistics">
+                            Statistiche
+                        </button>
+                    </li>
+                </ul>
+                
+                <div class="tab-content mt-3" id="visualizationTabsContent">
+                    <!-- Tab per il grafico originale degli orari -->
+                    <div class="tab-pane fade show active" id="orari-content" role="tabpanel" aria-labelledby="orari-tab">
+                        <!-- Contenuto originale (grafico orari) -->
+                        <div class="filter-controls">
+                            <label for="month-filter" data-lang-it="Filtra per mese:" data-lang-en="Filter by month:">Filtra per mese:</label>
+                            <select id="month-filter">
+                                <option value="all" data-lang-it="Tutti i mesi" data-lang-en="All months">Tutti i mesi</option>
+                                <!-- Altri mesi verranno aggiunti dinamicamente in base al dataset -->
+                            </select>
+                        </div>
+            
+                        <div id="stats-box" class="stats-container">
+                            <h4>Statistiche</h4>
+                            <table class="stats-table">
+                              <tr><td>Media:</td><td id="stat-mean">--:--</td></tr>
+                              <tr><td>Mediana:</td><td id="stat-median">--:--</td></tr>
+                              <tr><td>Dev.Std:</td><td id="stat-stddev">0.00</td></tr>
+                            </table>
+                        </div>
+                        
+                        <div class="chart-container">
+                            <canvas id="dataChart"></canvas>
+                        </div>
+                        
+                        <div class="legend">
+                            <div class="legend-item">
+                                <span class="dot original"></span> 
+                                <span data-lang-it="Dati originali" data-lang-en="Original data">Dati originali</span>
+                            </div>
+                            <div class="legend-item">
+                                <span class="dot estimated"></span> 
+                                <span data-lang-it="Dati stimati" data-lang-en="Estimated data">Dati stimati</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Tab per le nuove statistiche -->
+                    <div class="tab-pane fade" id="stats-content" role="tabpanel" aria-labelledby="stats-tab">
+                        <!-- Filtro mesi per statistiche -->
+                        <div class="filter-controls">
+                            <label for="stats-month-filter" data-lang-it="Filtra per mese:" data-lang-en="Filter by month:">Filtra per mese:</label>
+                            <select id="stats-month-filter">
+                                <option value="all" data-lang-it="Tutti i mesi" data-lang-en="All months">Tutti i mesi</option>
+                                <!-- Altri mesi verranno aggiunti dinamicamente in base al dataset -->
+                            </select>
+                        </div>
+                        
+                        <!-- Container per i due nuovi grafici -->
+                        <div class="stats-charts-container">
+                            <div class="chart-card">
+                                <div class="chart-header">
+                                    <h4 data-lang-it="Frequenza per nome" data-lang-en="Frequency by name">Frequenza per nome</h4>
+                                </div>
+                                <div class="chart-body">
+                                    <div class="chart-container">
+                                        <canvas id="namesChart"></canvas>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="chart-card">
+                                <div class="chart-header">
+                                    <h4 data-lang-it="Distribuzione oraria" data-lang-en="Hourly distribution">Distribuzione oraria</h4>
+                                </div>
+                                <div class="chart-body">
+                                    <div class="chart-container">
+                                        <canvas id="timeDistributionChart"></canvas>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
             
             <div class="legend">
                 <div class="legend-item">
@@ -162,6 +257,7 @@
     <script src="js/language.js"></script>
     <script src="js/contact.js"></script>
     <script src="https://cdn.cactus.chat/cactus.js"></script>
+    <script src="js/stats.js"></script>
     <link rel="stylesheet" href="https://cdn.cactus.chat/style.css">
 </body>
 </html>
