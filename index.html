@@ -112,6 +112,15 @@
                         </select>
                     </div>
                     
+                    <!-- Filtro nomi per statistiche -->
+                    <div class="filter-controls" style="margin-top: 15px;">
+                        <label for="stats-name-filter" data-lang-it="Filtra per nome:" data-lang-en="Filter by name:">Filtra per nome:</label>
+                        <select id="stats-name-filter">
+                            <option value="all" data-lang-it="Tutti i nomi" data-lang-en="All names">Tutti i nomi</option>
+                            <!-- Altri nomi verranno aggiunti dinamicamente in base al dataset -->
+                        </select>
+                    </div>
+                    
                     <!-- Container per i due grafici statistici -->
                     <div class="stats-charts-container">
                         <div class="chart-card">
@@ -229,7 +238,6 @@
     <script src="js/quotes.js"></script>
     <script src="js/language.js"></script>
     <script src="js/contact.js"></script>
-    <script src="https://cdn.cactus.chat/cactus.js"></script>
     <script src="js/stats.js"></script>
     <link rel="stylesheet" href="https://cdn.cactus.chat/style.css">
 </body>
