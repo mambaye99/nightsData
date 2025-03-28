@@ -5,12 +5,17 @@ class StatsVisualizer {
         this.namesChart = null;
         this.timeDistributionChart = null;
         this.currentMonth = 'all';
+        this.currentName = 'all';  // Nuovo filtro per nome
         this.originalData = [];
         
         // Riferimenti agli elementi DOM
         this.namesChartElement = document.getElementById('namesChart');
         this.timeDistributionChartElement = document.getElementById('timeDistributionChart');
         this.monthFilter = document.getElementById('stats-month-filter');
+        
+        // Nuovo elemento per il filtro dei nomi
+        this.createNameFilter();
+        this.nameFilter = document.getElementById('stats-name-filter');
         
         // Verifiche iniziali
         console.log('Inizializzazione StatsVisualizer...');
@@ -27,8 +32,36 @@ class StatsVisualizer {
         // Event listener per il cambio di mese
         this.monthFilter.addEventListener('change', this.handleMonthFilter.bind(this));
         
+        // Event listener per il cambio di nome
+        if (this.nameFilter) {
+            this.nameFilter.addEventListener('change', this.handleNameFilter.bind(this));
+        }
+        
         // Carica il dataset
         this.loadData();
+    }
+    
+    // Crea il filtro per nome dinamicamente
+    createNameFilter() {
+        // Cerca il container del filtro mesi per inserire il filtro nomi accanto
+        const statsContent = document.getElementById('statistics-content');
+        if (!statsContent) return;
+        
+        const filterControls = statsContent.querySelector('.filter-controls');
+        if (!filterControls) return;
+        
+        // Crea il nuovo filtro per nome
+        const nameFilterHTML = `
+            <div class="filter-controls name-filter-container" style="margin-left: 20px;">
+                <label for="stats-name-filter" data-lang-it="Filtra per nome:" data-lang-en="Filter by name:">Filtra per nome:</label>
+                <select id="stats-name-filter">
+                    <option value="all" data-lang-it="Tutti i nomi" data-lang-en="All names">Tutti i nomi</option>
+                </select>
+            </div>
+        `;
+        
+        // Inserisci il filtro nomi
+        filterControls.insertAdjacentHTML('afterend', nameFilterHTML);
     }
     
     // Caricamento dati
@@ -146,10 +179,14 @@ class StatsVisualizer {
                 const hour = date.getHours();
                 const timeSlot = (hour >= 9 && hour <= 19) ? hour : null;
                 
+                // Converti l'orario in minuti dall'inizio della giornata per la density function
+                const minutesOfDay = parseInt(timeParts[0]) * 60 + parseInt(timeParts[1]);
+                
                 return {
                     nome: row.nome.trim(),
                     date: date,
-                    timeSlot: timeSlot
+                    timeSlot: timeSlot,
+                    minutesOfDay: minutesOfDay
                 };
             } catch (error) {
                 console.error(`Errore nell'elaborazione della riga:`, row, error);
@@ -159,6 +196,9 @@ class StatsVisualizer {
         
         // Aggiorna il menu dei mesi con solo i mesi disponibili nel dataset
         this.updateMonthsFilter();
+        
+        // Aggiorna il menu dei nomi
+        this.updateNamesFilter();
         
         // Inizializza i grafici
         this.initCharts();
@@ -207,6 +247,42 @@ class StatsVisualizer {
         });
     }
     
+    // Aggiorna il filtro dei nomi
+    updateNamesFilter() {
+        if (!this.nameFilter) {
+            console.error('Elemento select per il filtro nomi non trovato!');
+            return;
+        }
+        
+        console.log('Aggiornamento filtro nomi per statistiche...');
+        
+        // Raccogli tutti i nomi unici presenti nel dataset
+        const availableNames = new Set();
+        this.originalData.forEach(item => {
+            if (item.nome) {
+                availableNames.add(item.nome);
+            }
+        });
+        
+        console.log('Nomi disponibili per statistiche:', availableNames);
+        
+        // Cancella le opzioni precedenti, tranne "Tutti i nomi"
+        while (this.nameFilter.options.length > 1) {
+            this.nameFilter.remove(1);
+        }
+        
+        // Converti in array e ordina alfabeticamente
+        const sortedNames = Array.from(availableNames).sort();
+        
+        // Aggiungi le nuove opzioni
+        sortedNames.forEach(name => {
+            const option = document.createElement('option');
+            option.value = name;
+            option.textContent = name;
+            this.nameFilter.appendChild(option);
+        });
+    }
+    
     // Gestisce il cambio di filtro del mese
     handleMonthFilter(event) {
         console.log('Cambio filtro mese per statistiche:', event.target.value);
@@ -222,25 +298,44 @@ class StatsVisualizer {
         this.updateCharts();
     }
     
-    // Ottieni i dati filtrati per il mese corrente
+    // Gestisce il cambio di filtro del nome
+    handleNameFilter(event) {
+        console.log('Cambio filtro nome per statistiche:', event.target.value);
+        this.currentName = event.target.value;
+        
+        // Aggiorna i grafici con il nuovo filtro
+        this.updateCharts();
+    }
+    
+    // Ottieni i dati filtrati per il mese e nome correnti
     getFilteredData() {
-        if (this.currentMonth === 'all') {
-            return this.originalData;
+        let filteredData = this.originalData;
+        
+        // Filtra per mese
+        if (this.currentMonth !== 'all') {
+            try {
+                // Il formato è "YYYY-MM"
+                const [year, month] = this.currentMonth.split('-').map(Number);
+                
+                filteredData = filteredData.filter(item => {
+                    return item.date && 
+                           item.date.getFullYear() === year && 
+                           item.date.getMonth() === month;
+                });
+            } catch (error) {
+                console.error('Errore durante il filtraggio dei dati per mese:', error);
+                // Continua con tutti i dati
+            }
         }
         
-        try {
-            // Il formato è "YYYY-MM"
-            const [year, month] = this.currentMonth.split('-').map(Number);
-            
-            return this.originalData.filter(item => {
-                return item.date && 
-                       item.date.getFullYear() === year && 
-                       item.date.getMonth() === month;
+        // Filtra per nome
+        if (this.currentName !== 'all') {
+            filteredData = filteredData.filter(item => {
+                return item.nome === this.currentName;
             });
-        } catch (error) {
-            console.error('Errore durante il filtraggio dei dati:', error);
-            return this.originalData; // Fallback a tutti i dati
         }
+        
+        return filteredData;
     }
     
     // Aggiorna i grafici con nuovi dati filtrati
@@ -257,17 +352,18 @@ class StatsVisualizer {
                 this.timeDistributionChart = null;
             }
             
-            // Controlla se abbiamo dati per il periodo selezionato
+            // Controlla se abbiamo dati per i filtri selezionati
             const filteredData = this.getFilteredData();
             if (!filteredData || filteredData.length === 0) {
-                this.showError('Nessun dato disponibile per il periodo selezionato', this.namesChartElement);
-                this.showError('Nessun dato disponibile per il periodo selezionato', this.timeDistributionChartElement);
+                this.showError('Nessun dato disponibile per i filtri selezionati', this.namesChartElement);
+                this.showError('Nessun dato disponibile per i filtri selezionati', this.timeDistributionChartElement);
                 return;
             }
             
             // Crea nuovi grafici con i dati filtrati
             this.initCharts();
-            console.log('Grafici statistiche aggiornati con filtro mese:', this.currentMonth);
+            console.log('Grafici statistiche aggiornati con filtri:', 
+                       { mese: this.currentMonth, nome: this.currentName });
         } catch (error) {
             console.error('Errore durante l\'aggiornamento dei grafici statistiche:', error);
             this.showError(`Errore durante l'aggiornamento dei grafici: ${error.message}`, this.namesChartElement);
@@ -292,7 +388,7 @@ class StatsVisualizer {
         // Inizializza il grafico dei nomi
         this.initNamesChart(filteredData);
         
-        // Inizializza il grafico della distribuzione oraria
+        // Inizializza il grafico della distribuzione oraria con density function
         this.initTimeDistributionChart(filteredData);
     }
     
@@ -374,7 +470,7 @@ class StatsVisualizer {
         });
     }
     
-    // Inizializza il grafico a barre per la distribuzione oraria
+    // Inizializza il grafico a barre per la distribuzione oraria con density function
     initTimeDistributionChart(data) {
         // Prepara le fasce orarie da 9 a 19
         const timeSlots = Array.from({ length: 11 }, (_, i) => i + 9);
@@ -401,30 +497,54 @@ class StatsVisualizer {
         // Prepara i dati per Chart.js
         const counts = timeSlots.map(hour => timeCounts[hour]);
         
-        // Crea il grafico a barre verticali
+        // Genera dati per la density function
+        const densityData = this.calculateDensityFunction(data);
+        
+        // Crea il grafico a barre verticali con linea di densità
         const ctx = this.timeDistributionChartElement.getContext('2d');
         this.timeDistributionChart = new Chart(ctx, {
             type: 'bar',
             data: {
                 labels: labels,
-                datasets: [{
-                    label: 'Frequenza',
-                    data: counts,
-                    backgroundColor: 'rgba(75, 192, 192, 0.7)',
-                    borderColor: 'rgba(75, 192, 192, 1)',
-                    borderWidth: 1
-                }]
+                datasets: [
+                    {
+                        label: 'Frequenza',
+                        data: counts,
+                        backgroundColor: 'rgba(75, 192, 192, 0.7)',
+                        borderColor: 'rgba(75, 192, 192, 1)',
+                        borderWidth: 1,
+                        order: 2
+                    },
+                    {
+                        label: 'Densità',
+                        data: densityData,
+                        type: 'line',
+                        borderColor: 'rgba(255, 99, 132, 1)',
+                        borderWidth: 2,
+                        pointRadius: 0,
+                        fill: false,
+                        tension: 0.4,
+                        order: 1
+                    }
+                ]
             },
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
                 plugins: {
                     legend: {
-                        display: false
+                        display: true
                     },
                     tooltip: {
                         callbacks: {
-                            label: (context) => `Frequenza: ${context.raw}`
+                            label: (context) => {
+                                const datasetLabel = context.dataset.label;
+                                if (datasetLabel === 'Frequenza') {
+                                    return `Frequenza: ${context.raw}`;
+                                } else {
+                                    return `Densità: ${context.raw.toFixed(2)}`;
+                                }
+                            }
                         }
                     }
                 },
@@ -433,13 +553,10 @@ class StatsVisualizer {
                         beginAtZero: true,
                         title: {
                             display: true,
-                            text: 'Numero di occorrenze',
+                            text: 'Frequenza / Densità',
                             font: {
                                 weight: 'bold'
                             }
-                        },
-                        ticks: {
-                            stepSize: 1
                         }
                     },
                     x: {
@@ -456,6 +573,41 @@ class StatsVisualizer {
         });
     }
     
+    // Calcola la funzione di densità utilizzando un kernel gaussiano
+    calculateDensityFunction(data) {
+        // Estrai gli orari in minuti (dall'inizio della giornata)
+        const times = data
+            .filter(item => item.date && item.date.getHours() >= 9 && item.date.getHours() <= 19)
+            .map(item => item.minutesOfDay);
+            
+        if (times.length === 0) return Array(11).fill(0);
+        
+        // Genera 11 punti equidistanti per la funzione di densità (9:00 - 19:00)
+        const hourlyPoints = Array.from({ length: 11 }, (_, i) => (9 + i) * 60 + 30); // +30 per centrare nell'ora
+        
+        // Parametro di smoothing (bandwidth)
+        const bandwidth = 60; // 1 ora
+        
+        // Funzione kernel gaussiana
+        const gaussianKernel = (x, mean, bandwidth) => {
+            const z = (x - mean) / bandwidth;
+            return Math.exp(-0.5 * z * z) / (bandwidth * Math.sqrt(2 * Math.PI));
+        };
+        
+        // Calcola la densità per ogni punto orario
+        const densities = hourlyPoints.map(point => {
+            // Somma i contributi di ogni osservazione
+            const density = times.reduce((sum, time) => {
+                return sum + gaussianKernel(point, time, bandwidth);
+            }, 0) / times.length;
+            
+            // Scala per rendere visibile sul grafico (moltiplica per il numero totale per avere scala simile alle barre)
+            return density * times.length * bandwidth / 30;
+        });
+        
+        return densities;
+    }
+    
     // Genera colori casuali ma visivamente piacevoli
     generateColors(count) {
         const colors = [];
@@ -467,86 +619,86 @@ class StatsVisualizer {
         return colors;
     }
     
-// Mostra un messaggio di errore
-showError(message, targetElement = null) {
-    console.error('ERRORE VISUALIZZAZIONE STATISTICHE:', message);
-    
-    // Se non è specificato un elemento target, usa entrambi i container
-    if (!targetElement) {
-        this.showError(message, this.namesChartElement);
-        this.showError(message, this.timeDistributionChartElement);
-        return;
+    // Mostra un messaggio di errore
+    showError(message, targetElement = null) {
+        console.error('ERRORE VISUALIZZAZIONE STATISTICHE:', message);
+        
+        // Se non è specificato un elemento target, usa entrambi i container
+        if (!targetElement) {
+            this.showError(message, this.namesChartElement);
+            this.showError(message, this.timeDistributionChartElement);
+            return;
+        }
+        
+        // Verifica che l'elemento target esista
+        if (!targetElement) {
+            console.error('Elemento target non trovato!');
+            return;
+        }
+        
+        targetElement.style.display = 'none';
+        
+        // Controlla se esiste già un messaggio di errore
+        const existingError = targetElement.parentNode.querySelector('.error-message');
+        if (existingError) {
+            existingError.textContent = message;
+            return;
+        }
+        
+        const errorElement = document.createElement('div');
+        errorElement.classList.add('error-message');
+        errorElement.style.backgroundColor = 'rgba(220, 53, 69, 0.2)'; 
+        errorElement.style.color = '#721c24';
+        errorElement.style.padding = '15px';
+        errorElement.style.borderRadius = '5px';
+        errorElement.style.marginTop = '10px';
+        errorElement.style.textAlign = 'center';
+        errorElement.textContent = message;
+        
+        targetElement.parentNode.appendChild(errorElement);
     }
-    
-    // Verifica che l'elemento target esista
-    if (!targetElement) {
-        console.error('Elemento target non trovato!');
-        return;
-    }
-    
-    targetElement.style.display = 'none';
-    
-    // Controlla se esiste già un messaggio di errore
-    const existingError = targetElement.parentNode.querySelector('.error-message');
-    if (existingError) {
-        existingError.textContent = message;
-        return;
-    }
-    
-    const errorElement = document.createElement('div');
-    errorElement.classList.add('error-message');
-    errorElement.style.backgroundColor = 'rgba(220, 53, 69, 0.2)'; 
-    errorElement.style.color = '#721c24';
-    errorElement.style.padding = '15px';
-    errorElement.style.borderRadius = '5px';
-    errorElement.style.marginTop = '10px';
-    errorElement.style.textAlign = 'center';
-    errorElement.textContent = message;
-    
-    targetElement.parentNode.appendChild(errorElement);
-}
 }
 
 // Inizializza l'evento per gestire l'attivazione del tab delle statistiche
 document.addEventListener('DOMContentLoaded', function() {
-// Inizializza il visualizzatore delle statistiche
-window.statsVisualizer = new StatsVisualizer();
+    // Inizializza il visualizzatore delle statistiche
+    window.statsVisualizer = new StatsVisualizer();
 
-// Gestione dell'attivazione del tab
-const statsTab = document.getElementById('stats-tab');
-if (statsTab) {
-    statsTab.addEventListener('click', function() {
-        // Aggiorna i grafici quando il tab viene attivato
-        // Questo è utile perché Chart.js può avere problemi con i grafici in container nascosti
-        setTimeout(() => {
-            if (window.statsVisualizer) {
-                if (!window.statsVisualizer.namesChart || !window.statsVisualizer.timeDistributionChart) {
-                    console.log('Inizializzazione grafici statistiche al cambio tab');
-                    window.statsVisualizer.updateCharts();
-                }
-            }
-        }, 100);
-    });
-}
-
-// Supporto per la traduzione dei contenuti del tab
-if (window.translatePage && typeof window.translatePage === 'function') {
-    const observer = new MutationObserver((mutations) => {
-        for (let mutation of mutations) {
-            if (mutation.type === 'attributes' && 
-                mutation.attributeName === 'data-current-lang') {
-                // Aggiorna i grafici per applicare la nuova lingua
+    // Gestione dell'attivazione del tab
+    const statsTab = document.getElementById('statistics-tab');
+    if (statsTab) {
+        statsTab.addEventListener('click', function() {
+            // Aggiorna i grafici quando il tab viene attivato
+            // Questo è utile perché Chart.js può avere problemi con i grafici in container nascosti
+            setTimeout(() => {
                 if (window.statsVisualizer) {
-                    window.statsVisualizer.updateCharts();
+                    if (!window.statsVisualizer.namesChart || !window.statsVisualizer.timeDistributionChart) {
+                        console.log('Inizializzazione grafici statistiche al cambio tab');
+                        window.statsVisualizer.updateCharts();
+                    }
+                }
+            }, 100);
+        });
+    }
+
+    // Supporto per la traduzione dei contenuti del tab
+    if (window.translatePage && typeof window.translatePage === 'function') {
+        const observer = new MutationObserver((mutations) => {
+            for (let mutation of mutations) {
+                if (mutation.type === 'attributes' && 
+                    mutation.attributeName === 'data-current-lang') {
+                    // Aggiorna i grafici per applicare la nuova lingua
+                    if (window.statsVisualizer) {
+                        window.statsVisualizer.updateCharts();
+                    }
                 }
             }
-        }
-    });
-    
-    // Osserva i cambiamenti di lingua nel documento
-    observer.observe(document.body, { 
-        attributes: true, 
-        attributeFilter: ['data-current-lang'] 
-    });
-}
+        });
+        
+        // Osserva i cambiamenti di lingua nel documento
+        observer.observe(document.body, { 
+            attributes: true, 
+            attributeFilter: ['data-current-lang'] 
+        });
+    }
 });
