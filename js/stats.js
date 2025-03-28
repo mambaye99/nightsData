@@ -42,26 +42,14 @@ class StatsVisualizer {
     }
     
     // Crea il filtro per nome dinamicamente
+    // Modifica questa funzione nel tuo stats.js
     createNameFilter() {
-        // Cerca il container del filtro mesi per inserire il filtro nomi accanto
-        const statsContent = document.getElementById('statistics-content');
-        if (!statsContent) return;
+        // Il filtro è già presente nell'HTML, dobbiamo solo ottenere il riferimento
+        this.nameFilter = document.getElementById('stats-name-filter');
         
-        const filterControls = statsContent.querySelector('.filter-controls');
-        if (!filterControls) return;
-        
-        // Crea il nuovo filtro per nome
-        const nameFilterHTML = `
-            <div class="filter-controls name-filter-container" style="margin-left: 20px;">
-                <label for="stats-name-filter" data-lang-it="Filtra per nome:" data-lang-en="Filter by name:">Filtra per nome:</label>
-                <select id="stats-name-filter">
-                    <option value="all" data-lang-it="Tutti i nomi" data-lang-en="All names">Tutti i nomi</option>
-                </select>
-            </div>
-        `;
-        
-        // Inserisci il filtro nomi
-        filterControls.insertAdjacentHTML('afterend', nameFilterHTML);
+        if (!this.nameFilter) {
+            console.error('Elemento select per il filtro nomi non trovato!');
+        }
     }
     
     // Caricamento dati
